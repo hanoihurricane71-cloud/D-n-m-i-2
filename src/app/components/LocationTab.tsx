@@ -244,7 +244,7 @@ export function LocationTab({
               <div className="relative">
                 <div
                   className={`
-                    inline-flex items-center h-10 px-4 text-sm font-semibold rounded-lg border transition-all duration-150 bg-white
+                    inline-flex items-center h-10 px-4 text-sm font-medium rounded-lg border transition-all duration-150 bg-white
                     ${(historyDateFrom || historyDateTo) ? 'border-brand-200 bg-brand-50/50 text-brand-700' : 'border-slate-200 text-slate-700'}
                   `}
                 >
@@ -253,7 +253,7 @@ export function LocationTab({
                   <button
                     type="button"
                     onClick={() => { if (historyDateFromRef.current) { try { historyDateFromRef.current.showPicker(); } catch { historyDateFromRef.current.click(); } } }}
-                    className="hover:text-brand-600 transition cursor-pointer font-semibold outline-none"
+                    className="hover:text-brand-600 transition cursor-pointer text-sm font-medium outline-none"
                   >
                     {historyDateFrom ? new Date(historyDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'From date'}
                   </button>
@@ -269,7 +269,7 @@ export function LocationTab({
                   <button
                     type="button"
                     onClick={() => { if (historyDateToRef.current) { try { historyDateToRef.current.showPicker(); } catch { historyDateToRef.current.click(); } } }}
-                    className="hover:text-brand-600 transition cursor-pointer font-semibold outline-none"
+                    className="hover:text-brand-600 transition cursor-pointer text-sm font-medium outline-none"
                   >
                     {historyDateTo ? new Date(historyDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'To date'}
                   </button>

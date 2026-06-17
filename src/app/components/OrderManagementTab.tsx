@@ -197,7 +197,7 @@ export function OrderManagementTab({
         <FilterDropdown
           label="Order Status"
           selected={orderStatusFilter}
-          options={['All statuses', 'New', 'In Production', 'Shipped', 'On Hold', 'Rejected', 'Cancelled']}
+          options={['All statuses', 'New', 'Prepared', 'Shipped', 'Canceled']}
           onSelect={(val) => {
             setOrderStatusFilter(val);
             setOrderCurrentPage(1);
@@ -242,7 +242,7 @@ export function OrderManagementTab({
         <div className="relative">
           <div
             className={`
-              inline-flex items-center h-10 px-3.5 text-sm font-semibold rounded-lg border transition-all duration-150 bg-white
+              inline-flex items-center h-10 px-3.5 text-sm font-medium rounded-lg border transition-all duration-150 bg-white
               ${(orderDateFrom || orderDateTo)
                 ? 'border-brand-200 bg-brand-50/50 text-brand-700'
                 : 'border-slate-200 text-slate-700'
@@ -258,7 +258,7 @@ export function OrderManagementTab({
                   try { orderDateFromRef.current.showPicker(); } catch { orderDateFromRef.current.click(); }
                 }
               }}
-              className="hover:text-brand-600 transition cursor-pointer font-semibold outline-none"
+              className="hover:text-brand-600 transition cursor-pointer text-sm font-medium outline-none"
             >
               {orderDateFrom
                 ? new Date(orderDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -287,7 +287,7 @@ export function OrderManagementTab({
                   try { orderDateToRef.current.showPicker(); } catch { orderDateToRef.current.click(); }
                 }
               }}
-              className="hover:text-brand-600 transition cursor-pointer font-semibold outline-none"
+              className="hover:text-brand-600 transition cursor-pointer text-sm font-medium outline-none"
             >
               {orderDateTo
                 ? new Date(orderDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -356,8 +356,8 @@ export function OrderManagementTab({
       {/* Table / List Area */}
       <div className="flex-1 overflow-x-auto min-h-[300px] border-t border-slate-100 relative">
         <table className="w-full text-sm text-left text-slate-500 border-collapse min-w-[1240px]">
-          <thead className="text-xs text-slate-400 font-bold uppercase tracking-wider bg-slate-50 select-none border-b border-slate-100">
-            <tr className="whitespace-nowrap">
+          <thead>
+            <tr className="bg-[#F8F9FA] text-slate-500 border-b border-slate-100 text-[11.5px] font-semibold uppercase tracking-wider whitespace-nowrap select-none">
               <th className="py-3 px-6 font-sans">Order Number</th>
               <th className="py-3 px-6 font-sans">Ref Number</th>
               <th className="py-3 px-6 font-sans">Order Date</th>
@@ -370,11 +370,12 @@ export function OrderManagementTab({
               <th className="py-3 px-6 font-sans">Destination</th>
             </tr>
           </thead>
+
           <tbody>
             {orderPagedItems.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-12 text-center text-slate-400 font-medium">
-                  <div className="flex flex-col items-center justify-center space-y-2">
+                <td colSpan={10} className="h-64 text-center text-slate-400 font-medium">
+                  <div className="flex flex-col items-center justify-center h-full space-y-2">
                     <ClipboardList className="h-8 w-8 text-slate-300" />
                     <p>No orders found matching your filters.</p>
                   </div>
@@ -384,50 +385,49 @@ export function OrderManagementTab({
               orderPagedItems.map((order) => (
                 <tr key={order.id} className="border-b border-slate-100/70 hover:bg-slate-50/40 transition-colors group">
                   {/* Order Number */}
-                  <td className="py-3 px-6 font-semibold font-mono text-slate-900 select-all whitespace-nowrap">
+                  <td className="py-3 px-6 whitespace-nowrap">
                     <button
                       type="button"
                       onClick={() => { setSelectedOrderDetail(order); setIsOrderDetailOpen(true); }}
-                      className="text-brand-600 hover:text-brand-700 underline decoration-dashed decoration-brand-300 underline-offset-4 hover:decoration-solid font-medium font-mono text-left focus:outline-none cursor-pointer transition-colors"
+                      className="text-blue-600 hover:text-blue-800 font-semibold font-mono text-sm text-left focus:outline-none cursor-pointer transition-colors"
                     >
                       {order.orderNumber}
                     </button>
                   </td>
                   {/* Ref Number */}
-                  <td className="py-3 px-6 font-semibold font-mono text-slate-900 select-all whitespace-nowrap">
+                  <td className="py-3 px-6 whitespace-nowrap">
                     <button
                       type="button"
                       onClick={() => { setSelectedOrderDetail(order); setIsOrderDetailOpen(true); }}
-                      className="text-brand-600 hover:text-brand-700 underline decoration-dashed decoration-brand-300 underline-offset-4 hover:decoration-solid font-medium font-mono text-left focus:outline-none cursor-pointer transition-colors"
+                      className="text-blue-600 hover:text-blue-800 font-semibold font-mono text-sm text-left focus:outline-none cursor-pointer transition-colors"
                     >
                       {order.refNumber || 'REF-N/A'}
                     </button>
                   </td>
                   {/* Order Date */}
-                  <td className="py-3 px-6 text-slate-600 whitespace-nowrap font-normal">{order.orderDate}</td>
+                  <td className="py-3 px-6 text-slate-700 whitespace-nowrap font-medium">{order.orderDate}</td>
                   {/* Store Name / Customer */}
-                  <td className="py-3 px-6 text-slate-800 font-semibold font-sans whitespace-nowrap truncate max-w-[180px]" title={order.customerStore}>
+                  <td className="py-3 px-6 text-slate-700 font-medium font-sans whitespace-nowrap truncate max-w-[180px]" title={order.customerStore}>
                     {order.customerStore}
                   </td>
                   {/* Qty */}
-                  <td className="py-3 px-6 text-right text-slate-600 font-mono font-normal whitespace-nowrap">
+                  <td className="py-3 px-6 text-right text-slate-700 font-medium font-mono whitespace-nowrap">
                     {order.quantity.toLocaleString('en-US')}
                   </td>
                   {/* Order Status */}
-                  <td className="py-3 px-6 font-normal whitespace-nowrap">
+                  <td className="py-3 px-6 font-medium whitespace-nowrap">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full border ${
                       order.orderStatus === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : order.orderStatus === 'In Production' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : order.orderStatus === 'Prepared' ? 'bg-blue-50 text-blue-700 border-blue-200'
                       : order.orderStatus === 'Shipped' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : order.orderStatus === 'On Hold' ? 'bg-slate-100 text-slate-700 border-slate-200'
-                      : order.orderStatus === 'Rejected' ? 'bg-rose-50 text-rose-700 border-rose-200'
-                      : 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+                      : order.orderStatus === 'Canceled' ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+                      : 'bg-slate-100 text-slate-400 border-slate-200'
                     }`}>
                       {order.orderStatus}
                     </span>
                   </td>
                   {/* Shipping Status */}
-                  <td className="py-3 px-6 font-normal whitespace-nowrap">
+                  <td className="py-3 px-6 font-medium whitespace-nowrap">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full border ${
                       order.shippingStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       : order.shippingStatus === 'In Transit' ? 'bg-purple-50 text-purple-700 border-purple-200'
@@ -443,9 +443,9 @@ export function OrderManagementTab({
                     </span>
                   </td>
                   {/* Shipping Method */}
-                  <td className="py-3 px-6 text-slate-600 whitespace-nowrap font-normal">{order.shippingMethod || '—'}</td>
+                  <td className="py-3 px-6 text-slate-700 whitespace-nowrap font-medium">{order.shippingMethod || '—'}</td>
                   {/* Tracking */}
-                  <td className="py-3 px-6 font-normal whitespace-nowrap">
+                  <td className="py-3 px-6 font-medium whitespace-nowrap">
                     {order.trackingNumber ? (
                       <div className="flex items-center gap-1.5 font-mono text-slate-600">
                         <span className="select-all tracking-wide font-mono text-xs w-[82px] block truncate" title={order.trackingNumber}>
@@ -474,7 +474,7 @@ export function OrderManagementTab({
                     )}
                   </td>
                   {/* Destination */}
-                  <td className="py-3 px-6 font-normal font-sans whitespace-nowrap">
+                  <td className="py-3 px-6 font-medium font-sans whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {order.destinationType === 'International' ? (
                         <Globe className="h-4 w-4 text-amber-500 shrink-0" />
@@ -482,7 +482,7 @@ export function OrderManagementTab({
                         <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                       )}
                       <div className="flex flex-col">
-                        <span className="text-slate-800 font-semibold text-xs leading-none">{order.destination || '—'}</span>
+                        <span className="text-slate-700 font-medium text-xs leading-none">{order.destination || '—'}</span>
                         <span className={`text-[9px] font-bold tracking-wider leading-none mt-1 ${
                           order.destinationType === 'International' ? 'text-amber-600' : 'text-slate-400'
                         }`}>

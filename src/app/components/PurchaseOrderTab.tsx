@@ -131,7 +131,7 @@ export function PurchaseOrderTab({
                 }
               }}
               className={`
-                inline-flex items-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-lg border transition-all duration-150 cursor-pointer whitespace-nowrap
+                inline-flex items-center gap-1.5 px-4 h-10 text-sm font-medium rounded-lg border transition-all duration-150 cursor-pointer whitespace-nowrap
                 ${selectedPOCreatedDate !== 'All Dates'
                   ? 'border-brand-200 bg-brand-50/50 text-brand-700 hover:bg-brand-50'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'

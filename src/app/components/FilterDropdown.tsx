@@ -62,9 +62,10 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       };
     }
 
-    // IN PRODUCTION / PROCESSING / PARTIAL RECEIVED (Blue)
+    // IN PRODUCTION / PREPARED / PROCESSING / PARTIAL RECEIVED (Blue)
     if (
       normalized === 'in production' ||
+      normalized === 'prepared' ||
       normalized === 'processing' ||
       normalized === 'partial received'
     ) {
@@ -119,8 +120,8 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       };
     }
 
-    // CANCELLED (Muted slate with line-though)
-    if (normalized === 'cancelled') {
+    // CANCELLED / CANCELED (Muted slate with line-though)
+    if (normalized === 'cancelled' || normalized === 'canceled') {
       return {
         btn: 'border-slate-200 bg-slate-50 text-slate-400 line-through hover:bg-slate-100',
         dot: 'bg-slate-400',

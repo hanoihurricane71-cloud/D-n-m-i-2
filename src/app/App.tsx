@@ -76,6 +76,7 @@ import { FilterDropdown } from './components/FilterDropdown';
 import { CreateModal } from './components/CreateModal';
 import { CreatePurchaseOrderModal } from './components/CreatePurchaseOrderModal';
 import { CreateInventoryAdditionModal } from './components/CreateInventoryAdditionModal';
+import { LabelTab } from './components/LabelTab';
 import { OrderManagementTab } from './components/OrderManagementTab';
 import { ProductTab } from './components/ProductTab';
 import { PurchaseOrderTab } from './components/PurchaseOrderTab';
@@ -237,7 +238,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null);
 
   // Active Navigation item
-  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location'>('Product');
+  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Label' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location'>('Product');
 
   // WIP printing (PAP) custom list and states
   const [papSelectedChannel, setPapSelectedChannel] = useState<string>('RBBL');
@@ -1732,11 +1733,28 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setActiveNavItem('Label')}
+              className={`
+                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
+                ${activeNavItem === 'Label'
+                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }
+              `}
+            >
+              <Tag className={`h-5 w-5 ${activeNavItem === 'Label' ? 'text-brand-600' : 'text-slate-400'}`} />
+              <span>Label</span>
+              {activeNavItem === 'Label' && (
+                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveNavItem('Product')}
               className={`
                 w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Product' 
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm' 
+                ${activeNavItem === 'Product'
+                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }
               `}
@@ -1750,51 +1768,12 @@ export default function App() {
 
             <button
               onClick={() => {
-                setActiveNavItem('Purchase order');
-              }}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Purchase order' 
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <ShoppingCart className={`h-5 w-5 ${activeNavItem === 'Purchase order' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>WRO</span>
-              {activeNavItem === 'Purchase order' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-
-
-            <button
-              onClick={() => {
-                setActiveNavItem('Addition');
-              }}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Addition' 
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <PackagePlus className={`h-5 w-5 ${activeNavItem === 'Addition' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>Addition</span>
-              {activeNavItem === 'Addition' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-
-            <button
-              onClick={() => {
                 setActiveNavItem('Location');
               }}
               className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Location' 
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm' 
+                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer hidden
+                ${activeNavItem === 'Location'
+                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }
               `}
@@ -1933,6 +1912,8 @@ export default function App() {
               setCopiedOrderId={setCopiedOrderId}
               triggerToast={triggerToast}
             />
+          ) : activeNavItem === 'Label' ? (
+            <LabelTab />
           ) : activeNavItem === 'Product' ? (
             <ProductTab
               activeTab={activeTab}
@@ -3221,15 +3202,13 @@ export default function App() {
                               <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                                 selectedOrderDetail.orderStatus === 'New'
                                   ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : selectedOrderDetail.orderStatus === 'In Production'
+                                  : selectedOrderDetail.orderStatus === 'Prepared'
                                   ? 'bg-blue-50 text-blue-700 border-blue-200'
                                   : selectedOrderDetail.orderStatus === 'Shipped'
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : selectedOrderDetail.orderStatus === 'On Hold'
-                                  ? 'bg-slate-100 text-slate-700 border-slate-200'
-                                  : selectedOrderDetail.orderStatus === 'Rejected'
-                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                  : 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+                                  : selectedOrderDetail.orderStatus === 'Canceled'
+                                  ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+                                  : 'bg-slate-100 text-slate-400 border-slate-200'
                               }`}>
                                 {selectedOrderDetail.orderStatus}
                               </span>
@@ -3530,12 +3509,12 @@ export default function App() {
 
                   {/* Right Column (1/3 width on md+): Internal Notes & Timeline */}
                   <div className="border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-6 flex flex-col h-full self-stretch min-h-0">
-                    
-                    {/* Timeline & Notes section */}
-                    <div className="flex flex-col flex-1 min-h-0 space-y-3.5 pt-1">
-                      <h4 className="text-sm font-bold text-slate-800">Timeline & Notes</h4>
-                      
-                      <div className="max-h-[360px] overflow-y-auto flex-1 scrollbar-thin pl-0 pr-1">
+
+                    {/* Timeline & Notes section — scrollable */}
+                    <div className="flex flex-col flex-1 min-h-0 space-y-3.5 pt-1 overflow-hidden">
+                      <h4 className="text-sm font-bold text-slate-800 shrink-0">Timeline & Notes</h4>
+
+                      <div className="overflow-y-auto flex-1 scrollbar-thin pl-0 pr-1">
                         <div className="relative border-l-2 border-slate-100 ml-2 pl-3.5 space-y-4 py-1">
                           {selectedOrderDetail.activityHistory && selectedOrderDetail.activityHistory.length > 0 ? (
                             selectedOrderDetail.activityHistory.map((act) => (
@@ -3577,16 +3556,16 @@ export default function App() {
                       </div>
 
                       {/* Unified Notes Input */}
-                      <div className="flex gap-2 items-center border-t border-slate-100 pt-3 mt-auto">
-                        <input
-                          type="text"
+                      <div className="border-t border-slate-100 pt-3 shrink-0">
+                        <textarea
                           value={orderCommentText}
                           onChange={(e) => setOrderCommentText(e.target.value)}
-                          placeholder="Enter internal note / comment..."
-                          className="flex-1 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition bg-white border border-slate-200 rounded-lg px-3 py-1.5 h-8"
+                          placeholder="Comment..."
+                          rows={3}
+                          className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              // trigger comment submission on Enter key
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
                               const triggerCommentBtn = document.getElementById('add-comment-btn');
                               if (triggerCommentBtn) triggerCommentBtn.click();
                             }
@@ -3608,8 +3587,8 @@ export default function App() {
 
                             setOrders(prev => prev.map(o => {
                               if (o.id === selectedOrderDetail.id) {
-                                  return { 
-                                    ...o, 
+                                  return {
+                                    ...o,
                                     internalNotes: val,
                                     activityHistory: [newAct, ...(o.activityHistory || [])]
                                   };
@@ -3617,8 +3596,8 @@ export default function App() {
                               return o;
                             }));
 
-                            setSelectedOrderDetail(prev => prev ? { 
-                              ...prev, 
+                            setSelectedOrderDetail(prev => prev ? {
+                              ...prev,
                               internalNotes: val,
                               activityHistory: [newAct, ...(prev.activityHistory || [])]
                             } : null);
@@ -3626,7 +3605,7 @@ export default function App() {
                             setOrderCommentText('');
                             triggerToast('Internal note saved!', 'success');
                           }}
-                          className="h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer shrink-0"
+                          className="mt-2 w-full h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer"
                         >
                           Save
                         </button>
