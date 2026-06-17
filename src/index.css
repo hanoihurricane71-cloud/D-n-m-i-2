@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand color system: Dedicated Professional Royal Blue Palette */
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+}
+
+@layer base {
+  html, body, button, input, select, textarea {
+    font-family: var(--font-sans);
+  }
+}
+
+/* Shifting animated gradient for primary buttons matching user reference */
+@keyframes brand-gradient-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.btn-primary-gradient {
+  background: linear-gradient(135deg, #2563eb, #3b82f6, #1d4ed8, #1e3a8a);
+  background-size: 200% 200%;
+  color: white;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn-primary-gradient:hover {
+  background-size: 200% 200%;
+  animation: brand-gradient-move 2.5s ease infinite;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4), 0 2px 8px rgba(56, 189, 248, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-primary-gradient:active {
+  transform: translateY(0.5px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.logo-gradient {
+  background: linear-gradient(135deg, #2563eb, #3b82f6, #1e40af, #3b82f6);
+  background-size: 200% 200%;
+  transition: all 0.4s ease;
+}
+
+.logo-text-gradient {
+  background: linear-gradient(135deg, #2563eb, #3b82f6, #1e40af, #3b82f6);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  transition: all 0.4s ease;
+}
+
+.logo-group:hover .logo-gradient {
+  animation: brand-gradient-move 2.5s ease infinite;
+  transform: scale(1.03);
+}
+
+.logo-group:hover .logo-text-gradient {
+  animation: brand-gradient-move 2.5s ease infinite;
+}
+
+/* Glass Sheen Light reflection for secondary buttons */
+.btn-secondary-sheen {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-secondary-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 80px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 25%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.6) 75%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+}
+
+.btn-secondary-sheen:hover::after {
+  animation: slide-sheen 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slide-sheen {
+  0% {
+    left: -150%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* Custom flow cyan gradient */
+@keyframes flow-cyan-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.wip-style-card-active {
+  background: linear-gradient(135deg, #e0f2fe, #a5f3fc, #bae6fd, #e0f7fa, #bae6fd);
+  background-size: 250% 250%;
+  animation: flow-cyan-gradient 3.5s ease infinite;
+}
+
+.wip-style-card-inactive {
+  background: linear-gradient(135deg, #f0f9ff, #f8fafc, #e0f2fe);
+}
+
+
+

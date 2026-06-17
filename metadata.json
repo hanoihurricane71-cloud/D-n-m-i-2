@@ -1,0 +1,6 @@
+{
+  "name": "SwiftPOD Dashboard",
+  "description": "A highly accurate replication of the SwiftPOD product management admin dashboard with customized blue branding.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
