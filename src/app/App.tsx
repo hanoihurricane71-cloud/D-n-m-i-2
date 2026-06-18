@@ -246,38 +246,45 @@ export default function App() {
 
   // User Profile Dropdown state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   // Connection Stores State
   const [stores, setStores] = useState<StoreRowItem[]>([
     {
       id: 'store-1',
+      active: true,
       integration: 'SwiftPOD API',
       storeName: 'Olivia Rhye Store',
       storeCode: 'OLIVIA_RHYE_01',
       storeAddress: '123 Fashion Blvd, Los Angeles, CA 90015',
       returnAddress: '456 Return Way, Carson, CA 90746',
       billingAddress: '123 Fashion Blvd, Los Angeles, CA 90015',
-      createdAt: '2026-05-12'
+      createdAt: '2026-05-12',
+      createdBy: 'Olivia Rhye'
     },
     {
       id: 'store-2',
+      active: true,
       integration: 'OrderDesk',
       storeName: 'Acme Corp Merch',
       storeCode: 'ACME_CORP_MERCH',
       storeAddress: '100 Enterprise Way, Suite 400, Innovation District, NY 10001',
       returnAddress: '456 Return Way, Carson, CA 90746',
       billingAddress: '100 Enterprise Way, Suite 400, Innovation District, NY 10001',
-      createdAt: '2026-05-20'
+      createdAt: '2026-05-20',
+      createdBy: 'Hiep Tran'
     },
     {
       id: 'store-3',
+      active: false,
       integration: 'SwiftPOD API',
       storeName: 'Phoenix Baker Apparel',
       storeCode: 'PHOENIX_BAKER_AP',
       storeAddress: '789 Desert Wind Trail, Phoenix, AZ 85001',
       returnAddress: '456 Return Way, Carson, CA 90746',
       billingAddress: '',
-      createdAt: '2026-06-01'
+      createdAt: '2026-06-01',
+      createdBy: 'Sarah Lee'
     }
   ]);
 
@@ -1797,7 +1804,7 @@ export default function App() {
         <div className="p-5 flex flex-col gap-6">
           
           {/* Logo & Platform Name */}
-          <div className="flex items-center gap-3 pl-0.5 group logo-group select-none">
+          <div className="flex items-center gap-3 pl-[8px] group logo-group select-none">
             <div className="h-9 w-9 logo-gradient rounded-xl flex items-center justify-center text-white font-extrabold shadow-sm relative overflow-hidden">
               <span className="relative z-10 text-base font-display">P</span>
             </div>
@@ -1906,17 +1913,17 @@ export default function App() {
         {/* User Profile Info Card & Footer bottom-left */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           <div 
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors group relative"
+            onClick={() => setIsLogoutConfirmOpen(true)}
+            className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-rose-50/40 cursor-pointer transition-colors group relative border border-transparent hover:border-rose-100/30"
           >
             <img
               src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
               alt="Hiep Tran avatar"
               referrerPolicy="no-referrer"
-              className="h-10 w-10 rounded-full object-cover border border-slate-200"
+              className="h-10 w-10 rounded-full object-cover border border-slate-200 group-hover:border-rose-200 transition-colors"
             />
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-semibold text-slate-800 block truncate leading-tight">
+              <span className="text-sm font-semibold text-slate-800 block truncate leading-tight group-hover:text-rose-700 transition-colors">
                 Hiep Tran
               </span>
               <span className="text-xs text-slate-500 block truncate">
@@ -1927,45 +1934,13 @@ export default function App() {
               type="button" 
               onClick={(e) => {
                 e.stopPropagation();
-                setIsUserMenuOpen(!isUserMenuOpen);
+                setIsLogoutConfirmOpen(true);
               }}
-              className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="p-1.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+              title="Log out"
             >
-              <MoreVertical className="h-4 w-4" />
+              <LogOut className="h-4 w-4" />
             </button>
-
-            <AnimatePresence>
-              {isUserMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute bottom-14 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50">
-                    <p className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">Account options</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      triggerToast('Logged out successfully', 'success');
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50/60 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="h-3.5 w-3.5 text-rose-500" />
-                    <span>Log out</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Micro developer reference notice popped on hover */}
-            <div className={`absolute bottom-12 left-2 right-2 bg-slate-900 text-slate-200 text-[11px] p-2 rounded-lg opacity-0 transition-opacity pointer-events-none shadow-lg border border-slate-700 font-mono z-50 ${!isUserMenuOpen ? 'group-hover:opacity-100' : ''}`}>
-              Dev Admin Acc: <strong>admin123</strong>
-            </div>
           </div>
         </div>
       </aside>
@@ -5283,6 +5258,70 @@ export default function App() {
                     }`}
                   >
                     Authorize & Reconvert
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {isLogoutConfirmOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Modal backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLogoutConfirmOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+
+            {/* Modal Dialog container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.18 }}
+              className="relative w-full max-w-sm bg-white rounded-xl shadow-xl overflow-hidden flex flex-col border border-slate-100 z-10"
+            >
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 select-none">
+                <h2 className="text-base font-bold text-slate-900 tracking-tight font-sans">
+                  Confirm Log Out
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsLogoutConfirmOpen(false)}
+                  className="p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-full transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                  Are you sure you want to log out of your session? Any unsaved changes in current entries will be dismissed.
+                </p>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLogoutConfirmOpen(false)}
+                    className="px-4 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold hover:text-slate-900 transition cursor-pointer font-sans"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogoutConfirmOpen(false);
+                      triggerToast('Logged out successfully', 'success');
+                    }}
+                    className="px-5 h-9 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold hover:shadow-sm transition cursor-pointer font-sans"
+                  >
+                    Log out
                   </button>
                 </div>
               </div>

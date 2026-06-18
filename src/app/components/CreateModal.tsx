@@ -622,7 +622,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
 
                   {/* Required Product Image Upload */}
                   <label className="text-sm font-semibold text-slate-650 pt-2 shrink-0">
-                    Product image <span className="text-rose-500 font-bold ml-0.5">*</span>
+                    Product image <span className="text-slate-400 font-normal ml-0.5">*</span>
                   </label>
                   <div className="space-y-2">
                     <input

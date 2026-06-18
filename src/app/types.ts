@@ -143,6 +143,7 @@ export interface OrderManagementItem {
 
 export interface StoreRowItem {
   id: string;
+  active: boolean;
   integration: 'OrderDesk' | 'SwiftPOD API';
   storeName: string;
   storeCode: string;
@@ -150,6 +151,7 @@ export interface StoreRowItem {
   returnAddress: string;
   billingAddress?: string;
   createdAt: string;
+  createdBy: string;
 }
 
 
