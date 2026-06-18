@@ -11,6 +11,10 @@ export interface Product {
   createdAt: string;
   lastUpdated: string;
   user: string;
+  style?: string;
+  color?: string;
+  size?: string;
+  image?: string;
 }
 
 export type TabType = 'Product' | 'Type' | 'Style' | 'Color' | 'Size';
@@ -88,7 +92,7 @@ export interface OrderManagementItem {
   refNumber: string;
   orderDate: string;
   customerStore: string;
-  orderStatus: 'New' | 'In Production' | 'Shipped' | 'On Hold' | 'Rejected' | 'Cancelled';
+  orderStatus: 'New' | 'In Production' | 'Shipped' | 'On Hold' | 'Rejected' | 'Cancelled' | 'Prepared' | 'Canceled';
   rejectionReason?: string;
   shippingStatus: 'Unknown' | 'Pre Transit' | 'In Transit' | 'Out for Delivery' | 'Delivered' | 'Available For Pickup' | 'Return To Sender' | 'Failure' | 'Cancelled';
   quantity: number;

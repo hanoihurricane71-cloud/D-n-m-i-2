@@ -196,11 +196,18 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   const [employeeId, setEmployeeId] = useState('');
   const [tempEmpId, setTempEmpId] = useState('');
 
+  // States for product image upload
+  const [productImgData, setProductImgData] = useState<string>('');
+  const [productImgError, setProductImgError] = useState<string>('');
+  const productFileInputRef = useRef<HTMLInputElement>(null);
+
   // Reset employee scanning details when modal opens
   useEffect(() => {
     if (isOpen) {
       setEmployeeId('');
       setTempEmpId('');
+      setProductImgData('');
+      setProductImgError('');
     }
   }, [isOpen]);
 
@@ -270,6 +277,10 @@ export const CreateModal: React.FC<CreateModalProps> = ({
 
     if (activeTab === 'Product') {
       if (!name.trim() || !productCustomer) return;
+      if (!productImgData) {
+        setProductImgError('Product image is required');
+        return;
+      }
       if (weightError || pkgWeightError) return;
 
       const finalSkuSuffix = skuCode.trim() || 'UNGSBHOOS';
@@ -284,7 +295,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
         weight: parseFloat(weight) || 21.3,
         packagingWeight: parseFloat(packagingWeight) || 1.2,
         customer: productCustomer,
-        user
+        user,
+        style: selectedStyle || 'G500',
+        color: selectedColor || 'Dark blue',
+        size: selectedSize || 'XL',
+        image: productImgData
       });
 
       // Reset Product fields
@@ -300,6 +315,8 @@ export const CreateModal: React.FC<CreateModalProps> = ({
       setPkgWeightError('');
       setEmployeeId('');
       setTempEmpId('');
+      setProductImgData('');
+      setProductImgError('');
 
     } else if (activeTab === 'Type') {
       if (!typeName.trim()) return;
@@ -601,6 +618,80 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                       onChange={setProductCustomer}
                       openUp={true}
                     />
+                  </div>
+
+                  {/* Required Product Image Upload */}
+                  <label className="text-sm font-semibold text-slate-650 pt-2 shrink-0">
+                    Product image <span className="text-rose-500 font-bold ml-0.5">*</span>
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      ref={productFileInputRef}
+                      className="hidden"
+                      accept="image/png, image/svg+xml, image/jpeg, image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (!['image/png', 'image/svg+xml', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+                            setProductImgError('Only PNG, SVG, JPG, WEBP formats are supported!');
+                            return;
+                          }
+                          if (file.size > 2 * 1024 * 1024) {
+                            setProductImgError('Maximum file size is 2MB!');
+                            return;
+                          }
+                          setProductImgError('');
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setProductImgData(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+
+                    <div 
+                      onClick={() => productFileInputRef.current?.click()}
+                      className={`border border-dashed rounded-xl p-4 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center group ${
+                        productImgData 
+                          ? 'border-emerald-300 bg-emerald-50/10' 
+                          : 'border-slate-200 hover:border-brand-400 bg-slate-50/30 hover:bg-slate-50'
+                      }`}
+                    >
+                      {productImgData ? (
+                        <div className="relative h-20 w-auto min-w-[80px] max-w-[120px] rounded-lg bg-white border border-slate-200 p-1.5 flex items-center justify-center shadow-xs">
+                          <img src={productImgData} alt="Product Preview" className="h-full w-full object-contain rounded-md" referrerPolicy="no-referrer" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProductImgData('');
+                              setProductImgError('');
+                              if (productFileInputRef.current) productFileInputRef.current.value = '';
+                            }}
+                            className="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 transition-all shadow-md block border-0 cursor-pointer"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-1">
+                          <div className="h-9 w-9 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-white group-hover:scale-105 transition-all">
+                            <Upload className="h-4.5 w-4.5" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-600 mt-2 hover:text-brand-600 transition-colors">
+                            Click to upload product image
+                          </span>
+                          <span className="text-[10px] text-slate-400 mt-0.5">
+                            PNG, JPG, WEBP up to 2MB (Required)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {productImgError && (
+                      <p className="text-xs text-rose-500 mt-1 font-semibold">{productImgError}</p>
+                    )}
                   </div>
                 </div>
                 </>
@@ -908,7 +999,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                 </button>
                  <button
                    type="submit"
-                   disabled={activeTab === 'Product' && !employeeId.trim()}
+                   disabled={activeTab === 'Product' && (!employeeId.trim() || !productImgData)}
                    className="px-5 h-10 btn-primary-gradient rounded-lg text-sm font-semibold cursor-pointer outline-none focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-all"
                  >
                    Create

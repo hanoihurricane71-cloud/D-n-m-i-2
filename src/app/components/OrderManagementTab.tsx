@@ -65,6 +65,7 @@ interface OrderManagementTabProps {
   copiedOrderId: string | null;
   setCopiedOrderId: (v: string | null) => void;
   triggerToast: (text: string, type?: 'success' | 'info') => void;
+  onUpdateOrderStatus: (id: string, newStatus: string) => void;
 }
 
 export function OrderManagementTab({
@@ -106,7 +107,9 @@ export function OrderManagementTab({
   copiedOrderId,
   setCopiedOrderId,
   triggerToast,
+  onUpdateOrderStatus,
 }: OrderManagementTabProps) {
+  const [pendingStatusUpdate, setPendingStatusUpdate] = React.useState<{ orderId: string, status: string } | null>(null);
   const hasActiveFilters =
     orderSearchQuery ||
     orderProductQuery ||
@@ -414,17 +417,66 @@ export function OrderManagementTab({
                   <td className="py-3 px-6 text-right text-slate-700 font-medium font-mono whitespace-nowrap">
                     {order.quantity.toLocaleString('en-US')}
                   </td>
-                  {/* Order Status */}
-                  <td className="py-3 px-6 font-medium whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full border ${
-                      order.orderStatus === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : order.orderStatus === 'Prepared' ? 'bg-blue-50 text-blue-700 border-blue-200'
-                      : order.orderStatus === 'Shipped' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : order.orderStatus === 'Canceled' ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
-                      : 'bg-slate-100 text-slate-400 border-slate-200'
-                    }`}>
-                      {order.orderStatus}
-                    </span>
+                   {/* Order Status */}
+                  <td className="py-3 px-6 font-medium whitespace-nowrap relative">
+                    <div className="relative inline-block">
+                      <select
+                        value={pendingStatusUpdate?.orderId === order.id ? pendingStatusUpdate.status : (order.orderStatus || 'New')}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === order.orderStatus) {
+                            setPendingStatusUpdate(null);
+                          } else {
+                            setPendingStatusUpdate({ orderId: order.id, status: val });
+                          }
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full border cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-400 select-none appearance-none pr-8 transition ${
+                          order.orderStatus === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : order.orderStatus === 'Prepared' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : order.orderStatus === 'Shipped' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : order.orderStatus === 'Canceled' ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+                          : 'bg-slate-100 text-slate-400 border-slate-200'
+                        }`}
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 8px center',
+                        }}
+                      >
+                        <option value="New">New</option>
+                        <option value="Prepared">Prepared</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Canceled">Canceled</option>
+                      </select>
+
+                      {pendingStatusUpdate?.orderId === order.id && (
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[60] w-56 bg-white border border-slate-200 text-slate-800 rounded-xl shadow-2xl p-3 text-left animate-in fade-in slide-in-from-top-2 duration-150">
+                          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-t border-l border-slate-200 rotate-45" />
+                          <p className="text-[11px] font-medium text-slate-700 leading-normal font-sans">
+                            Change order status to <span className="font-bold text-brand-600">{pendingStatusUpdate.status}</span>?
+                          </p>
+                          <div className="flex gap-2 justify-end mt-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setPendingStatusUpdate(null)}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 border border-slate-100 text-slate-600 font-bold rounded text-[10px] cursor-pointer transition focus:outline-none"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onUpdateOrderStatus(order.id, pendingStatusUpdate.status);
+                                setPendingStatusUpdate(null);
+                              }}
+                              className="px-2 py-0.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded text-[10px] cursor-pointer transition focus:outline-none"
+                            >
+                              Confirm
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   {/* Shipping Status */}
                   <td className="py-3 px-6 font-medium whitespace-nowrap">

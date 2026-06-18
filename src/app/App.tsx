@@ -12,6 +12,7 @@ import {
   FileText, 
   MoreHorizontal,
   MoreVertical, 
+  LogOut,
   HelpCircle, 
   SlidersHorizontal, 
   RotateCcw,
@@ -51,11 +52,13 @@ import {
   QrCode,
   RefreshCw,
   UserCheck,
-  Inbox
+  Inbox,
+  Store,
+  Building
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-import { Product, TabType, PurchaseOrder, PurchaseOrderItem, AdditionItem, LocationItem, LocationHistoryItem, OrderManagementItem } from './types';
+import { Product, TabType, PurchaseOrder, PurchaseOrderItem, AdditionItem, LocationItem, LocationHistoryItem, OrderManagementItem, StoreRowItem } from './types';
 import { 
   INITIAL_PRODUCTS, 
   STYLE_OPTIONS, 
@@ -82,6 +85,7 @@ import { ProductTab } from './components/ProductTab';
 import { PurchaseOrderTab } from './components/PurchaseOrderTab';
 import { AdditionTab } from './components/AdditionTab';
 import { LocationTab } from './components/LocationTab';
+import { StoreManagementTab } from './components/StoreManagementTab';
 
 
 interface TypeRowItem {
@@ -238,7 +242,62 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null);
 
   // Active Navigation item
-  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Label' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location'>('Product');
+  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Label' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location' | 'Store'>('Product');
+
+  // User Profile Dropdown state
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // Connection Stores State
+  const [stores, setStores] = useState<StoreRowItem[]>([
+    {
+      id: 'store-1',
+      integration: 'SwiftPOD API',
+      storeName: 'Olivia Rhye Store',
+      storeCode: 'OLIVIA_RHYE_01',
+      storeAddress: '123 Fashion Blvd, Los Angeles, CA 90015',
+      returnAddress: '456 Return Way, Carson, CA 90746',
+      billingAddress: '123 Fashion Blvd, Los Angeles, CA 90015',
+      createdAt: '2026-05-12'
+    },
+    {
+      id: 'store-2',
+      integration: 'OrderDesk',
+      storeName: 'Acme Corp Merch',
+      storeCode: 'ACME_CORP_MERCH',
+      storeAddress: '100 Enterprise Way, Suite 400, Innovation District, NY 10001',
+      returnAddress: '456 Return Way, Carson, CA 90746',
+      billingAddress: '100 Enterprise Way, Suite 400, Innovation District, NY 10001',
+      createdAt: '2026-05-20'
+    },
+    {
+      id: 'store-3',
+      integration: 'SwiftPOD API',
+      storeName: 'Phoenix Baker Apparel',
+      storeCode: 'PHOENIX_BAKER_AP',
+      storeAddress: '789 Desert Wind Trail, Phoenix, AZ 85001',
+      returnAddress: '456 Return Way, Carson, CA 90746',
+      billingAddress: '',
+      createdAt: '2026-06-01'
+    }
+  ]);
+
+  const handleCreateStore = (newStore: Omit<StoreRowItem, 'id' | 'createdAt'>) => {
+    const store: StoreRowItem = {
+      ...newStore,
+      id: `store-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setStores(prev => [store, ...prev]);
+  };
+
+  const handleUpdateStore = (id: string, updatedFields: Omit<StoreRowItem, 'id' | 'createdAt'>) => {
+    setStores(prev => prev.map(s => s.id === id ? { ...s, ...updatedFields } : s));
+  };
+
+  const handleDeleteStore = (id: string) => {
+    setStores(prev => prev.filter(s => s.id !== id));
+    triggerToast('Store connection deleted successfully', 'success');
+  };
 
   // WIP printing (PAP) custom list and states
   const [papSelectedChannel, setPapSelectedChannel] = useState<string>('RBBL');
@@ -591,6 +650,7 @@ export default function App() {
   const [orderRejectReasonText, setOrderRejectReasonText] = useState('');
   const [isRejectingOrder, setIsRejectingOrder] = useState(false);
   const [pendingShippingMethod, setPendingShippingMethod] = useState<string | null>(null);
+  const [pendingOrderStatus, setPendingOrderStatus] = useState<string | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<OrderManagementItem | null>(null);
   const [orderCommentText, setOrderCommentText] = useState('');
   const [initialInternalNote, setInitialInternalNote] = useState('');
@@ -598,10 +658,43 @@ export default function App() {
 
   useEffect(() => {
     setPendingShippingMethod(null);
+    setPendingOrderStatus(null);
     setOrderCommentText('');
     setInternalNoteDraft('');
     setInitialInternalNote(selectedOrderDetail?.internalNotes || '');
   }, [selectedOrderDetail?.id]);
+
+  const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
+    const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newAct = {
+      id: `act_${Date.now()}`,
+      date: nowStr,
+      action: `Order status updated to ${newStatus}`,
+      performedBy: 'Hiep Admin'
+    };
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        return { 
+          ...o, 
+          orderStatus: newStatus as any,
+          activityHistory: [newAct, ...(o.activityHistory || [])]
+        };
+      }
+      return o;
+    }));
+
+    setSelectedOrderDetail(prev => {
+      if (prev && prev.id === orderId) {
+        return {
+          ...prev,
+          orderStatus: newStatus as any,
+          activityHistory: [newAct, ...(prev.activityHistory || [])]
+        };
+      }
+      return prev;
+    });
+  };
 
   const [isEditingShipAddress, setIsEditingShipAddress] = useState(false);
   const [shipName, setShipName] = useState('');
@@ -1704,12 +1797,12 @@ export default function App() {
         <div className="p-5 flex flex-col gap-6">
           
           {/* Logo & Platform Name */}
-          <div className="flex items-center gap-3 group logo-group select-none">
+          <div className="flex items-center gap-3 pl-0.5 group logo-group select-none">
             <div className="h-9 w-9 logo-gradient rounded-xl flex items-center justify-center text-white font-extrabold shadow-sm relative overflow-hidden">
-              <span className="relative z-10 text-base font-display">S</span>
+              <span className="relative z-10 text-base font-display">P</span>
             </div>
             <div>
-              <span className="font-display font-bold text-lg tracking-tight logo-text-gradient block leading-none">SwiftPOD</span>
+              <span className="font-display font-bold text-lg tracking-tight logo-text-gradient block leading-none">PAP system</span>
             </div>
           </div>
 
@@ -1767,6 +1860,23 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setActiveNavItem('Store')}
+              className={`
+                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
+                ${activeNavItem === 'Store'
+                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }
+              `}
+            >
+              <Store className={`h-5 w-5 ${activeNavItem === 'Store' ? 'text-brand-600' : 'text-slate-400'}`} />
+              <span>Store management</span>
+              {activeNavItem === 'Store' && (
+                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
+              )}
+            </button>
+
+            <button
               onClick={() => {
                 setActiveNavItem('Location');
               }}
@@ -1795,7 +1905,10 @@ export default function App() {
 
         {/* User Profile Info Card & Footer bottom-left */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors group relative">
+          <div 
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors group relative"
+          >
             <img
               src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
               alt="Hiep Tran avatar"
@@ -1814,15 +1927,43 @@ export default function App() {
               type="button" 
               onClick={(e) => {
                 e.stopPropagation();
-                triggerToast('User Profile action menu triggers', 'info');
+                setIsUserMenuOpen(!isUserMenuOpen);
               }}
               className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             >
               <MoreVertical className="h-4 w-4" />
             </button>
 
+            <AnimatePresence>
+              {isUserMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute bottom-14 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50">
+                    <p className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">Account options</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      triggerToast('Logged out successfully', 'success');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50/60 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="h-3.5 w-3.5 text-rose-500" />
+                    <span>Log out</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Micro developer reference notice popped on hover */}
-            <div className="absolute bottom-12 left-2 right-2 bg-slate-900 text-slate-200 text-[11px] p-2 rounded-lg opacity-0 transition-opacity pointer-events-none group-hover:opacity-100 shadow-lg border border-slate-700 font-mono z-50">
+            <div className={`absolute bottom-12 left-2 right-2 bg-slate-900 text-slate-200 text-[11px] p-2 rounded-lg opacity-0 transition-opacity pointer-events-none shadow-lg border border-slate-700 font-mono z-50 ${!isUserMenuOpen ? 'group-hover:opacity-100' : ''}`}>
               Dev Admin Acc: <strong>admin123</strong>
             </div>
           </div>
@@ -1871,7 +2012,15 @@ export default function App() {
         {/* Floating rounded central board */}
         <div id="main-content-card" className="bg-white rounded-2xl shadow-sm border border-slate-100/90 flex flex-col">
           
-          {activeNavItem === 'Order management' ? (
+          {activeNavItem === 'Store' ? (
+            <StoreManagementTab
+              stores={stores}
+              onCreateStore={handleCreateStore}
+              onUpdateStore={handleUpdateStore}
+              onDeleteStore={handleDeleteStore}
+              triggerToast={triggerToast}
+            />
+          ) : activeNavItem === 'Order management' ? (
             <OrderManagementTab
               orderPagedItems={orderPagedItems}
               orderTotalPages={orderTotalPages}
@@ -1911,9 +2060,10 @@ export default function App() {
               copiedOrderId={copiedOrderId}
               setCopiedOrderId={setCopiedOrderId}
               triggerToast={triggerToast}
+              onUpdateOrderStatus={handleUpdateOrderStatus}
             />
           ) : activeNavItem === 'Label' ? (
-            <LabelTab />
+            <LabelTab products={products} />
           ) : activeNavItem === 'Product' ? (
             <ProductTab
               activeTab={activeTab}
@@ -3133,7 +3283,7 @@ export default function App() {
                                   setPendingShippingMethod(val);
                                 }
                               }}
-                              className={`mt-1 block w-full text-xs font-semibold text-slate-700 bg-white border rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer h-7 transition ${
+                              className={`mt-1 block w-36 text-xs font-semibold text-slate-700 bg-white border rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer h-7 transition ${
                                 pendingShippingMethod !== null ? 'border-amber-400 ring-1 ring-amber-100 bg-amber-50/10' : 'border-slate-200 hover:border-slate-350'
                               }`}
                             >
@@ -3196,23 +3346,56 @@ export default function App() {
                               </div>
                             )}
                           </div>
-                          <div>
+                          <div className="relative">
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Order Status</span>
-                            <div className="flex flex-col gap-1 mt-1 font-sans">
-                              <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                selectedOrderDetail.orderStatus === 'New'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : selectedOrderDetail.orderStatus === 'Prepared'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                  : selectedOrderDetail.orderStatus === 'Shipped'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : selectedOrderDetail.orderStatus === 'Canceled'
-                                  ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
-                                  : 'bg-slate-100 text-slate-400 border-slate-200'
-                              }`}>
-                                {selectedOrderDetail.orderStatus}
-                              </span>
-                            </div>
+                            <select
+                              value={pendingOrderStatus !== null ? pendingOrderStatus : (selectedOrderDetail.orderStatus || 'New')}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === (selectedOrderDetail.orderStatus || 'New')) {
+                                  setPendingOrderStatus(null);
+                                } else {
+                                  setPendingOrderStatus(val);
+                                }
+                              }}
+                              className={`mt-1 block w-36 text-xs font-semibold text-slate-700 bg-white border rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer h-7 transition ${
+                                pendingOrderStatus !== null ? 'border-amber-400 ring-1 ring-amber-100 bg-amber-50/10' : 'border-slate-200 hover:border-slate-350'
+                              }`}
+                            >
+                              <option value="New">New</option>
+                              <option value="Prepared">Prepared</option>
+                              <option value="Shipped">Shipped</option>
+                              <option value="Canceled">Canceled</option>
+                            </select>
+                            {pendingOrderStatus !== null && (
+                              <div className="absolute left-0 right-0 top-full mt-2 z-[60] w-56 bg-white border border-slate-200 text-slate-800 rounded-xl shadow-xl p-3 text-left animate-in fade-in slide-in-from-top-2 duration-150">
+                                <div className="absolute -top-1 left-6 w-2.5 h-2.5 bg-white border-t border-l border-slate-200 rotate-45" />
+                                <p className="text-[11px] font-medium text-slate-700 leading-normal font-sans">
+                                  Change order status to <span className="font-bold text-brand-600">{pendingOrderStatus}</span>?
+                                </p>
+                                <div className="flex gap-2 justify-end mt-2.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingOrderStatus(null)}
+                                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 font-bold rounded text-[10px] cursor-pointer transition focus:outline-none"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newStatus = pendingOrderStatus;
+                                      handleUpdateOrderStatus(selectedOrderDetail.id, newStatus);
+                                      triggerToast(`Order status updated to ${newStatus}`, 'success');
+                                      setPendingOrderStatus(null);
+                                    }}
+                                    className="px-2 py-0.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded text-[10px] cursor-pointer transition focus:outline-none"
+                                  >
+                                    Confirm
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div>
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Shipping Status</span>
@@ -3489,8 +3672,8 @@ export default function App() {
                                 <a
                                   href={selectedOrderDetail.shipmentInfo.labelLink}
                                   target="_blank"
-                                  rel="noreferrer"
-                                  className="px-2.5 py-1 bg-brand-600 text-white rounded-md text-[10px] font-bold hover:bg-brand-700 inline-flex items-center gap-1 focus:outline-none transition cursor-pointer"
+                                  rel="_noreferrer"
+                                  className="px-2.5 py-1 bg-brand-600 !text-white rounded-md text-[10px] font-bold hover:bg-brand-700 inline-flex items-center gap-1 focus:outline-none transition cursor-pointer"
                                   title="Open Label"
                                 >
                                   <ExternalLink className="h-3 w-3" />
@@ -3511,57 +3694,16 @@ export default function App() {
                   <div className="border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-6 flex flex-col h-full self-stretch min-h-0">
 
                     {/* Timeline & Notes section — scrollable */}
-                    <div className="flex flex-col flex-1 min-h-0 space-y-3.5 pt-1 overflow-hidden">
+                    <div className="flex flex-col flex-1 min-h-0 space-y-3 pl-1 pt-1 overflow-hidden">
                       <h4 className="text-sm font-bold text-slate-800 shrink-0">Timeline & Notes</h4>
 
-                      <div className="overflow-y-auto flex-1 scrollbar-thin pl-0 pr-1">
-                        <div className="relative border-l-2 border-slate-100 ml-2 pl-3.5 space-y-4 py-1">
-                          {selectedOrderDetail.activityHistory && selectedOrderDetail.activityHistory.length > 0 ? (
-                            selectedOrderDetail.activityHistory.map((act) => (
-                              <div key={act.id} className="relative animate-in fade-in slide-in-from-top-1 duration-150">
-                                {/* Dot icon */}
-                                <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center">
-                                  <span className="h-1 w-1 rounded-full bg-slate-350" />
-                                </span>
-                                <div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-xs font-normal text-slate-800">{act.action}</span>
-                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 font-sans">
-                                      <span className="font-semibold text-slate-500">{act.performedBy}</span>
-                                      <span>•</span>
-                                      <span>{act.date}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="relative">
-                              <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-brand-500 bg-white flex items-center justify-center">
-                                <span className="h-1 w-1 rounded-full bg-brand-500" />
-                              </span>
-                              <div>
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="text-xs font-normal text-slate-800">Order Registered</span>
-                                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 font-sans">
-                                    <span className="font-semibold text-slate-500">Client Integration API</span>
-                                    <span>•</span>
-                                    <span>{selectedOrderDetail.orderDate}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Unified Notes Input */}
-                      <div className="border-t border-slate-100 pt-3 shrink-0">
+                      {/* Unified Notes Input - Moved above timeline, removed sticky and shadow */}
+                      <div className="shrink-0 w-full mb-2">
                         <textarea
                           value={orderCommentText}
                           onChange={(e) => setOrderCommentText(e.target.value)}
                           placeholder="Comment..."
-                          rows={3}
+                          rows={2}
                           className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
@@ -3605,10 +3747,51 @@ export default function App() {
                             setOrderCommentText('');
                             triggerToast('Internal note saved!', 'success');
                           }}
-                          className="mt-2 w-full h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer"
+                          className="mt-1.5 w-full h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer"
                         >
                           Save
                         </button>
+                      </div>
+
+                      <div className="overflow-y-auto flex-1 scrollbar-thin pl-0 pr-1">
+                        <div className="relative border-l-2 border-slate-100 ml-2 pl-3.5 space-y-4 py-1">
+                          {selectedOrderDetail.activityHistory && selectedOrderDetail.activityHistory.length > 0 ? (
+                            selectedOrderDetail.activityHistory.map((act) => (
+                              <div key={act.id} className="relative animate-in fade-in slide-in-from-top-1 duration-150">
+                                {/* Dot icon */}
+                                <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center">
+                                  <span className="h-1 w-1 rounded-full bg-slate-350" />
+                                </span>
+                                <div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-xs font-normal text-slate-800">{act.action}</span>
+                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 font-sans">
+                                      <span className="font-semibold text-slate-500">{act.performedBy}</span>
+                                      <span>•</span>
+                                      <span>{act.date}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="relative">
+                              <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-brand-500 bg-white flex items-center justify-center">
+                                <span className="h-1 w-1 rounded-full bg-brand-500" />
+                              </span>
+                              <div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs font-normal text-slate-800">Order Registered</span>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 font-sans">
+                                    <span className="font-semibold text-slate-500">Client Integration API</span>
+                                    <span>•</span>
+                                    <span>{selectedOrderDetail.orderDate}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                     </div>

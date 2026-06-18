@@ -1,5 +1,24 @@
 import { Product, AdditionItem, LocationHistoryItem, OrderManagementItem } from './types';
 
+const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2YzZjRmNiIgLz48cmVjdCB4PSI3MCIgeT0iMTEwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjI4MCIgcng9IjMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5YmEzYWYiIHN0cm9rZS13aWR0aD0iMjAiIC8+PGNpcmNsZSBjeD0iMzEwIiBjeT0iMTkwIiByPSIzNSIgZmlsbD0iIzliYTNhZiIgLz48cG9seWdvbiBwb2ludHM9IjgwLDM4MCAyMTAsMTk1IDMxNSwzODAiIGZpbGw9IiM5YmEzYWYiIC8+PHBvbHlnb24gcG9pbnRzPSIyMTUsMzgwIDMyNSwyMzAgNDIwLDM4MCIgZmlsbD0iIzliYTNhZiIgLz48L3N2Zz4=";
+const img1 = placeholder;
+const img2 = placeholder;
+const img3 = placeholder;
+const img4 = placeholder;
+const img5 = placeholder;
+const img6 = placeholder;
+const img7 = placeholder;
+const img8 = placeholder;
+const img9 = placeholder;
+const img10 = placeholder;
+const img11 = placeholder;
+const img12 = placeholder;
+const img13 = placeholder;
+const img14 = placeholder;
+const img15 = placeholder;
+const img16 = placeholder;
+const img17 = placeholder;
+
 export const INITIAL_PRODUCTS: Product[] = [
   {
     id: '1',
@@ -12,7 +31,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img1
   },
   {
     id: '2',
@@ -25,7 +45,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img17
   },
   {
     id: '3',
@@ -38,7 +59,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img3
   },
   {
     id: '4',
@@ -51,7 +73,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Hiep Tran Dinh',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img4
   },
   {
     id: '5',
@@ -64,7 +87,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img5
   },
   {
     id: '6',
@@ -77,7 +101,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img6
   },
   {
     id: '7',
@@ -90,7 +115,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img7
   },
   {
     id: '8',
@@ -103,7 +129,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img8
   },
   {
     id: '9',
@@ -116,7 +143,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img9
   },
   {
     id: '10',
@@ -129,7 +157,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Jan 3, 2024',
     lastUpdated: 'Jan 4, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img10
   },
   // Extra pages of items for realistic searching, pagination and filtering
   {
@@ -143,7 +172,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Olivia Rhye',
     createdAt: 'Jan 10, 2024',
     lastUpdated: 'Jan 11, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img11
   },
   {
     id: '12',
@@ -156,7 +186,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'John Doe',
     createdAt: 'Jan 12, 2024',
     lastUpdated: 'Jan 12, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img12
   },
   {
     id: '13',
@@ -169,7 +200,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Hiep Tran Dinh',
     createdAt: 'Feb 1, 2024',
     lastUpdated: 'Feb 2, 2024',
-    user: 'editor123'
+    user: 'editor123',
+    image: img13
   },
   {
     id: '14',
@@ -182,7 +214,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     customer: 'Alexandra San',
     createdAt: 'Feb 15, 2024',
     lastUpdated: 'Feb 16, 2024',
-    user: 'admin123'
+    user: 'admin123',
+    image: img14
   }
 ];
 

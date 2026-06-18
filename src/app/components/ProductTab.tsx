@@ -1,4 +1,5 @@
 import React from 'react';
+const itemThumbImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2YzZjRmNiIgLz48cmVjdCB4PSI3MCIgeT0iMTEwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjI4MCIgcng9IjMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5YmEzYWYiIHN0cm9rZS13aWR0aD0iMjAiIC8+PGNpcmNsZSBjeD0iMzEwIiBjeT0iMTkwIiByPSIzNSIgZmlsbD0iIzliYTNhZiIgLz48cG9seWdvbiBwb2ludHM9IjgwLDM4MCAyMTAsMTk1IDMxNSwzODAiIGZpbGw9IiM5YmEzYWYiIC8+PHBvbHlnb24gcG9pbnRzPSIyMTUsMzgwIDMyNSwyMzAgNDIwLDM4MCIgZmlsbD0iIzliYTNhZiIgLz48L3N2Zz4=";
 import {
   Search,
   Calendar,
@@ -209,6 +210,9 @@ export function ProductTab({
   setIsCreateModalOpen,
   triggerToast,
 }: ProductTabProps) {
+  const [hoveredProduct, setHoveredProduct] = React.useState<Product | null>(null);
+  const [hoverRect, setHoverRect] = React.useState<DOMRect | null>(null);
+
   return (
     <>
       {/* Header context: Product details */}
@@ -390,6 +394,7 @@ export function ProductTab({
               {activeTab === 'Product' && (
                 <>
                   <th className="py-3 px-6 select-none font-sans">Name</th>
+                  <th className="py-3 px-6 font-sans">Image</th>
                   <th className="py-3 px-6 font-sans">Product style / SKU</th>
                   <th className="py-3 px-6 font-sans text-right">Incoming stock</th>
                   <th className="py-3 px-6 font-sans">Stock qty</th>
@@ -453,13 +458,33 @@ export function ProductTab({
                       <div className="flex items-center gap-4">
                         <Toggle checked={product.active} onChange={() => handleToggleActive(product.id, product.active)} />
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold text-slate-800 tracking-tight text-sm ${!product.active ? 'text-slate-500/80' : ''}`}>
+                           <span className={`font-semibold text-slate-800 tracking-tight text-sm ${!product.active ? 'text-slate-500/80' : ''}`}>
                             {product.name}
                           </span>
                           {product.user === 'editor123' && (
                             <span className="text-[10px] text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 whitespace-nowrap">Flagged Item</span>
                           )}
                         </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 font-sans whitespace-nowrap">
+                      <div
+                        className="relative h-12 w-12 rounded-xl border border-slate-200/80 bg-white p-1 flex items-center justify-center cursor-zoom-in transition shadow-xs hover:border-brand-400"
+                        onMouseEnter={(e) => {
+                          setHoveredProduct(product);
+                          setHoverRect(e.currentTarget.getBoundingClientRect());
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredProduct(null);
+                          setHoverRect(null);
+                        }}
+                      >
+                        <img
+                          src={product.image || itemThumbImg}
+                          alt={product.name}
+                          className="h-full w-full object-contain rounded-lg"
+                          referrerPolicy="no-referrer"
+                        />
                       </div>
                     </td>
                     <td className="py-4 px-6 font-sans leading-relaxed whitespace-nowrap">
@@ -714,6 +739,27 @@ export function ProductTab({
         </div>
 
       </div>
+
+      {hoveredProduct && hoverRect && (
+        <div
+          className="fixed z-[9999] pointer-events-none flex flex-col bg-white p-3 rounded-2xl border border-slate-100 shadow-2xl w-56 h-56 transition-all duration-100 animate-in fade-in zoom-in-95"
+          style={{
+            top: `${hoverRect.top + hoverRect.height / 2}px`,
+            left: `${hoverRect.right + 12}px`,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 text-left">Large Preview</div>
+          <div className="flex-1 min-h-0 bg-white rounded-lg p-2 flex items-center justify-center border border-slate-100/50">
+            <img
+              src={hoveredProduct.image || itemThumbImg}
+              alt={`${hoveredProduct.name} large review`}
+              className="max-w-full max-h-full object-contain rounded-md"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }

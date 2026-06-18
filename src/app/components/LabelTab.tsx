@@ -3,12 +3,61 @@ import {
   Tag, Search, User, CheckCircle2, Circle, Printer,
   Edit, X, Check, AlertCircle, FileText, Gift,
   Loader2, Plus, Trash2, Clock, Activity, Package,
-  MapPin, ChevronDown, Shirt, Layers, Coffee
+  MapPin, ChevronDown, Shirt, Layers, Coffee, CornerDownLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import labelPlaceholderImg from '../../imports/image-6.png';
-import labelSampleImg from '../../imports/image-17.png';
-import itemThumbImg from '../../imports/image-16.png';
+import labelSampleImg from '../../imports/image.png';
+const itemThumbImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2YzZjRmNiIgLz48cmVjdCB4PSI3MCIgeT0iMTEwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjI4MCIgcng9IjMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5YmEzYWYiIHN0cm9rZS13aWR0aD0iMjAiIC8+PGNpcmNsZSBjeD0iMzEwIiBjeT0iMTkwIiByPSIzNSIgZmlsbD0iIzliYTNhZiIgLz48cG9seWdvbiBwb2ludHM9IjgwLDM4MCAyMTAsMTk1IDMxNSwzODAiIGZpbGw9IiM5YmEzYWYiIC8+PHBvbHlnb24gcG9pbnRzPSIyMTUsMzgwIDMyNSwyMzAgNDIwLDM4MCIgZmlsbD0iIzliYTNhZiIgLz48L3N2Zz4=";
+
+import labelSampleImg1 from '../../imports/image-1.png';
+import labelSampleImg2 from '../../imports/image-2.png';
+import labelSampleImg3 from '../../imports/image-3.png';
+import labelSampleImg4 from '../../imports/image-4.png';
+import labelSampleImg5 from '../../imports/image-5.png';
+import labelSampleImg6 from '../../imports/image-6.png';
+import labelSampleImg7 from '../../imports/image-7.png';
+import labelSampleImg8 from '../../imports/image-8.png';
+import labelSampleImg9 from '../../imports/image-9.png';
+import labelSampleImg10 from '../../imports/image-10.png';
+import labelSampleImg11 from '../../imports/image-11.png';
+import labelSampleImg12 from '../../imports/image-12.png';
+import labelSampleImg13 from '../../imports/image-13.png';
+import labelSampleImg14 from '../../imports/image-14.png';
+import labelSampleImg15 from '../../imports/image-15.png';
+import labelSampleImg16 from '../../imports/image-16.png';
+import labelSampleImg17 from '../../imports/image-17.png';
+
+const LABEL_IMAGES = [
+  labelSampleImg,
+  labelSampleImg1,
+  labelSampleImg2,
+  labelSampleImg3,
+  labelSampleImg4,
+  labelSampleImg5,
+  labelSampleImg6,
+  labelSampleImg7,
+  labelSampleImg8,
+  labelSampleImg9,
+  labelSampleImg10,
+  labelSampleImg11,
+  labelSampleImg12,
+  labelSampleImg13,
+  labelSampleImg14,
+  labelSampleImg15,
+  labelSampleImg16,
+  labelSampleImg17
+];
+
+const getRandomLabelImg = (tabName: string, labelId: string) => {
+  const seed = tabName + labelId;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % LABEL_IMAGES.length;
+  return LABEL_IMAGES[index];
+};
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -241,7 +290,7 @@ function PrintPreview({ src, alt }: { src: string; alt: string }) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
-export function LabelTab() {
+export function LabelTab({ products = [] }: { products?: any[] } = {}) {
   const [employeeId, setEmployeeId] = useState('');
   const [tempEmpId, setTempEmpId] = useState('');
   const [showEmpInput, setShowEmpInput] = useState(false);
@@ -250,6 +299,15 @@ export function LabelTab() {
   const [order, setOrder] = useState<LabelOrder | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [pstTime, setPstTime] = useState(getPSTNow());
+
+  const getProductImage = (item: OrderItem) => {
+    const matched = products.find(p => 
+      p.style?.trim().toUpperCase() === item.style?.trim().toUpperCase() &&
+      p.color?.trim().toUpperCase() === item.color?.trim().toUpperCase() &&
+      p.size?.trim().toUpperCase() === item.size?.trim().toUpperCase()
+    );
+    return matched?.image || itemThumbImg;
+  };
 
   const [outputCount] = useState(0);
   const [sessionStart] = useState(Date.now());
@@ -277,6 +335,16 @@ export function LabelTab() {
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const [generatedLabel, setGeneratedLabel] = useState<string | null>(null);
 
+  // Redesigned Create Shipping Label step-1 states
+  const [carrierPackage, setCarrierPackage] = useState('ALL');
+  const [weightValue, setWeightValue] = useState<string>('23.76');
+  const [weightUnit, setWeightUnit] = useState('oz');
+  const [sizeL, setSizeL] = useState<string>('15.00');
+  const [sizeW, setSizeW] = useState<string>('11.00');
+  const [sizeH, setSizeH] = useState<string>('1.00');
+  const [hasFetchedRates, setHasFetchedRates] = useState(false);
+  const [showAllRates, setShowAllRates] = useState(false);
+
   const [isInsertOpen, setIsInsertOpen] = useState(false);
   const [insertType, setInsertType] = useState('Thank You Card');
   const [insertMsg, setInsertMsg] = useState('');
@@ -292,6 +360,14 @@ export function LabelTab() {
     i2: 'INNER NECK LABEL',
     i3: 'FRONT',
     i4: 'DTG BACK FULL',
+  };
+
+  // Mock beautiful artwork print designs for each item (high-quality illustration graphics from Unsplash)
+  const ITEM_ARTWORKS: Record<string, string> = {
+    i1: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&auto=format&fit=crop&q=80', // Beautiful flower illustration artwork
+    i2: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop&q=80', // Vibrant fluid acrylic paint pattern artwork
+    i3: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80', // Elegant colorful 3D geometric visual art
+    i4: 'https://images.unsplash.com/photo-1533158326339-7f3cf2404354?w=400&auto=format&fit=crop&q=80', // Celestial constellation abstract painting
   };
 
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
@@ -351,17 +427,69 @@ export function LabelTab() {
 
   const handleGenerateLabel = () => {
     setIsRateModalOpen(true);
-    setIsLoadingRates(true);
-    setRates([]);
+    setIsLoadingRates(false);
+    setHasFetchedRates(false);
     setSelectedRate(null);
-    setTimeout(() => { setRates(MOCK_RATES); setIsLoadingRates(false); }, 1200);
+    setCarrierPackage('ALL');
+    setWeightValue('23.76');
+    setWeightUnit('oz');
+    setSizeL('15.00');
+    setSizeW('11.00');
+    setSizeH('1.00');
+    setShowAllRates(false);
+  };
+
+  const handleGetRates = () => {
+    setIsLoadingRates(true);
+    setHasFetchedRates(false);
+    setSelectedRate(null);
+    setRates([]);
+    setTimeout(() => {
+      setRates([
+        { carrier: 'UspsShip', service: 'GroundAdvantage', price: 7.45, days: 'Est delivery No info days' },
+        { carrier: 'USPS', service: 'GroundAdvantage - Commercial Rate', price: 7.45, days: 'Est delivery No info days' },
+        { carrier: 'USPS', service: 'GroundAdvantage - NSA Account', price: 7.45, days: 'Est delivery No info days' },
+        { carrier: 'UspsShip', service: 'Priority', price: 15.51, days: 'Est delivery No info days' },
+      ]);
+      setSelectedRate({ carrier: 'UspsShip', service: 'GroundAdvantage', price: 7.45, days: 'Est delivery No info days' });
+      setIsLoadingRates(false);
+      setHasFetchedRates(true);
+    }, 850);
   };
 
   const handleConfirmRate = () => {
     if (!selectedRate) return;
+    const newShipmentId = `shp_${Date.now()}`;
+    const newTracking = `9400100${Date.now().toString().slice(-14)}`;
+    
+    const newShipment: ShipmentCard = {
+      id: newShipmentId,
+      tracking: newTracking,
+      status: 'Pre Transit',
+      service: selectedRate.service,
+      dimensions: `(${sizeL}x${sizeW}x${sizeH} in) / ${weightValue} ${weightUnit}`,
+      price: `$${selectedRate.price.toFixed(2)}`,
+      itemCount: order ? order.items.reduce((acc, it) => acc + it.qty, 0) : 1,
+      labelItems: [
+        { labelId: order ? `${order.orderNumber}-1/1` : 'LBL-NEW-1/1', employee: employeeId || 'Admin', time: new Date().toISOString().replace('T', ' ').slice(0, 19) }
+      ]
+    };
+
     setGeneratedLabel(`SHP-${Date.now().toString().slice(-8)}`);
+    
+    if (order) {
+      setOrder(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          shippingStatus: 'Prepared',
+          shipments: [newShipment, ...prev.shipments]
+        };
+      });
+    }
+
     setIsRateModalOpen(false);
-    showToast('Shipping label generated!');
+    showToast('Shipping label created!');
   };
 
   const empName = employeeId ? `Hi ${employeeId}!` : '';
@@ -382,7 +510,6 @@ export function LabelTab() {
           </div>
           <span className="text-xs text-slate-500 font-medium">Output: <b className="text-slate-700">{outputCount} item</b></span>
           <span className="text-xs text-slate-500 font-medium">Time: <b className="text-slate-700">{elapsed}</b></span>
-          <span className="text-xs text-slate-500 font-medium">Backlog: <b className="text-rose-600">{backlogCount}</b></span>
           <button
             type="button"
             onClick={() => { setEmployeeId(''); setTempEmpId(''); setOrder(null); setLabelInput(''); }}
@@ -431,16 +558,25 @@ export function LabelTab() {
         )}
       </AnimatePresence>
 
-      {/* Page title */}
-      <div className="shrink-0 px-6 pt-5 pb-3">
-        <h1 className="text-2xl font-bold text-slate-900">Create shipping label</h1>
+      {/* Page title and Centered Big Backlog */}
+      <div className="shrink-0 px-6 pt-5 pb-3 flex items-center justify-between relative">
+        <h1 className="text-2xl font-bold text-slate-900">Shipping label</h1>
+        
+        {/* Horizontally centered prominent Backlog — Simplified shipping label style with deep black bold text, no background */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 select-none">
+          <span className="text-2xl font-bold text-slate-900">Backlog:</span>
+          <span className="text-2xl font-extrabold text-slate-950 tabular-nums leading-none">{backlogCount}</span>
+        </div>
+        
+        {/* Right side filler for horizontal alignment balance */}
+        <div className="shrink-0 w-24 hidden md:block" />
       </div>
 
       {/* Employee bar */}
       {renderEmpBar()}
 
       {/* Scan bar */}
-      <div className="shrink-0 px-4 py-2.5 border-b border-slate-100 bg-white flex items-center gap-2">
+      <div className="shrink-0 px-4 py-3.5 border-b border-slate-100 bg-white flex items-center gap-2.5">
         <Search className="h-4 w-4 text-slate-400 shrink-0" />
         <input
           ref={labelRef}
@@ -448,28 +584,30 @@ export function LabelTab() {
           value={labelInput}
           onChange={e => { setLabelInput(e.target.value); }}
           onKeyDown={e => { if (e.key === 'Enter') handleScan(); }}
-          placeholder="Scan Label ID… (e.g. LBL-001054)"
+          placeholder="Scan and auto-trigger or type here (e.g. LBL-001054)"
           disabled={!employeeId}
-          className="flex-1 h-8 px-2 text-sm text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-slate-400 disabled:opacity-40"
+          className="flex-1 h-8 px-2 text-sm text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-slate-400 disabled:opacity-40 font-sans font-medium"
         />
-
-        <button type="button" onClick={handleScan} disabled={!employeeId || !labelInput.trim()}
-          className="h-10 btn-primary-gradient rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-40 disabled:pointer-events-none shrink-0"
-          style={{ width: 120 }}>
-          Enter
-        </button>
+        {employeeId && (
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200/70 rounded text-[10px] font-bold text-slate-450 select-none shrink-0" title="Press Enter to confirm">
+            <span className="font-sans text-[9px] uppercase tracking-wider">Enter</span>
+            <CornerDownLeft className="h-3 w-3 text-slate-400" />
+          </div>
+        )}
       </div>
 
       {/* 3-column layout */}
       {!order ? (
-        <div className="flex-1 flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center gap-5 py-10">
-            <img
-              src={labelPlaceholderImg}
-              alt="Label placeholder"
-              className="h-28 w-auto object-contain"
-            />
-            <p className="text-sm font-semibold text-slate-400 tracking-wide">
+        <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-6 min-h-[450px]">
+          <div className="flex flex-col items-center max-w-sm text-center">
+            <div className="mb-4">
+              <img
+                src={labelSampleImg}
+                alt="Scan Label Placeholder"
+                className="h-40 w-auto object-contain"
+              />
+            </div>
+            <p className="text-sm font-semibold text-slate-600 font-sans tracking-wide">
               Scan Label ID to start
             </p>
           </div>
@@ -486,7 +624,13 @@ export function LabelTab() {
                     <Package className="h-5 w-5 text-slate-300" />
                   </div>
                   <p className="text-xs font-semibold text-slate-400">No shipment yet</p>
-                  <p className="text-xs text-slate-300">Generate a label to create one</p>
+                  <button
+                    type="button"
+                    onClick={handleGenerateLabel}
+                    className="mt-3 w-full flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold py-2 px-3 cursor-pointer transition shadow-xs focus:outline-none"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Create Shipping Label
+                  </button>
                 </div>
               ) : (
                 order.shipments.map((shp, idx) => (
@@ -649,7 +793,7 @@ export function LabelTab() {
                     </div>
 
                     <button type="button"
-                      onClick={() => generatedLabel ? showToast('Sent to printer!') : handleGenerateLabel()}
+                      onClick={() => order.shipments.length > 0 ? showToast('Sent to printer!') : showToast('No shipping label generated yet to print!', false)}
                       className="h-8 px-4 btn-primary-gradient rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5">
                       <Printer className="h-3.5 w-3.5" /> Print
                     </button>
@@ -658,12 +802,18 @@ export function LabelTab() {
 
                 {/* Preview inside same card */}
                 {!order.shipments[0] ? (
-                  <div className="bg-slate-50 h-36 flex flex-col items-center justify-center text-slate-400 gap-2 text-xs">
-                    <FileText className="h-7 w-7 text-slate-300" />
-                    Generate a label to preview
+                  <div className="bg-[#404040] py-8 flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[340px]">
+                    <img
+                      src={labelPlaceholderImg}
+                      alt="Initial default label empty state"
+                      className="h-36 w-auto object-contain border-2 border-dashed border-white/20 rounded-xl p-2 bg-white shadow-lg shadow-black/30 max-w-[260px]"
+                    />
+                    <p className="text-xs font-semibold text-white/50 tracking-wider">
+                      Shipping label to preview
+                    </p>
                   </div>
                 ) : (
-                  <PrintPreview src={labelSampleImg} alt={activePreviewTab === 'Label' ? 'Shipping label' : insertLabels.find(l => l.abbr === activePreviewTab)?.label || 'Insert'} />
+                  <PrintPreview src={getRandomLabelImg(activePreviewTab, order.labelId)} alt={activePreviewTab === 'Label' ? 'Shipping label' : insertLabels.find(l => l.abbr === activePreviewTab)?.label || 'Insert'} />
                 )}
               </div>
             </div>
@@ -705,35 +855,48 @@ export function LabelTab() {
             </div>
 
             {/* Item list */}
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 font-sans">
               {items.map(item => (
-                <div key={item.id} className="px-3 py-3">
-                  {/* Style / Color / Size */}
-                  <p className="text-xs text-slate-500 mb-2 leading-none">
-                    {item.style} / {item.color} / {item.size}
-                  </p>
-                  {/* Thumbnail + print area link + qty */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      {/* Image — click to lightbox */}
+                <div
+                  key={item.id}
+                  onClick={() => cycleItem(item.id)}
+                  className="px-4 py-4 cursor-pointer hover:bg-slate-50/80 transition flex items-center justify-between gap-6"
+                >
+                  {/* Left Column: Image on left, Name on right, left-aligned */}
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+                    {/* Shirt Image Illustration on the left */}
+                    <div className="relative group shrink-0">
                       <img
-                        src={itemThumbImg}
-                        alt={item.productName}
-                        onClick={() => setLightboxImg(itemThumbImg)}
-                        className="h-16 w-16 object-contain rounded cursor-zoom-in hover:opacity-80 transition"
+                        src={getProductImage(item)}
+                        alt={`${item.style} shirt illustration`}
+                        className={`h-16 w-16 object-contain rounded-xl border p-1 bg-slate-50 shadow-xs transition-all duration-300 group-hover:scale-105 ${
+                          item.status === 'ok' ? 'border-emerald-300 ring-2 ring-emerald-50' : 'border-slate-200'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLightboxImg(getProductImage(item));
+                        }}
+                        referrerPolicy="no-referrer"
                       />
-                      {/* Hyperlink — print area name, opens original in new tab */}
-                      <a
-                        href={itemThumbImg}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-semibold text-blue-600 hover:text-blue-800 truncate block max-w-[110px]"
-                        title={PRINT_AREAS[item.id] || item.productName}
-                      >
-                        {PRINT_AREAS[item.id] || item.productName}
-                      </a>
+                      {item.status === 'ok' && (
+                        <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm">
+                          <Check className="h-3 w-3 block" strokeWidth={3} />
+                        </span>
+                      )}
                     </div>
-                    <span className={`text-2xl font-black leading-none shrink-0 ${item.status === 'ok' ? 'text-emerald-600' : 'text-slate-300'}`}>
+                    {/* Shirt Name (Style / Color / Size) left-aligned */}
+                    <div className="flex flex-col min-w-0">
+                      <div className="text-xs font-bold text-slate-700 leading-snug tracking-wide" title={`${item.style} / ${item.color} / ${item.size}`}>
+                        {item.style} / {item.color} / {item.size}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Verification Ratio aligned center-right */}
+                  <div className="shrink-0 pl-2 text-right font-sans">
+                    <span className={`text-2xl font-black leading-none select-none tracking-tight transition duration-200 ${
+                      item.status === 'ok' ? 'text-emerald-600 font-extrabold' : 'text-slate-300'
+                    }`}>
                       {item.verifiedQty}/{item.qty}
                     </span>
                   </div>
@@ -1005,41 +1168,190 @@ export function LabelTab() {
               className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsRateModalOpen(false)} />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }} transition={{ type: 'spring', duration: 0.35 }}
-              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg border border-slate-100 z-50">
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg border border-slate-100 z-50 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-900">Create Shipment Label</h3>
-                <button type="button" onClick={() => setIsRateModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer"><X className="h-4 w-4" /></button>
+                <h3 className="font-bold text-slate-900 text-base font-sans">Create Shipment label</h3>
+                <button type="button" onClick={() => setIsRateModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer transition"><X className="h-4 w-4" /></button>
               </div>
-              <div className="px-6 py-5">
-                {isLoadingRates ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-3 text-slate-400">
-                    <Loader2 className="h-7 w-7 animate-spin text-brand-500" />
-                    <p className="text-sm font-medium">Retrieving rates…</p>
+              <div className="px-6 py-5 space-y-4 max-h-[75vh] overflow-y-auto font-sans scrollbar-thin">
+                
+                {/* 1. Account Row */}
+                <div className="grid grid-cols-3 items-center gap-4 py-1 border-b border-slate-50">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</label>
+                  <div className="col-span-2">
+                    <span className="text-sm font-bold text-slate-800">{order ? order.storeName : "MyStore1"}</span>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-xs text-slate-500 font-medium mb-3">Select a shipping service:</p>
-                    {rates.map((r, i) => (
-                      <button key={i} type="button" onClick={() => setSelectedRate(r)}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition cursor-pointer ${selectedRate === r ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
-                        <div className="text-left">
-                          <p className="text-sm font-bold text-slate-800">{r.carrier} — {r.service}</p>
-                          <p className="text-xs text-slate-400">{r.days}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-bold text-slate-900">${r.price.toFixed(2)}</span>
-                          {selectedRate === r && <Check className="h-4 w-4 text-brand-600" />}
-                        </div>
+                </div>
+
+                {/* 2. Carrier/Package Row */}
+                <div className="grid grid-cols-3 items-center gap-4 py-1 border-b border-slate-50">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Carrier/Package</label>
+                  <div className="col-span-2">
+                    <select
+                      value={carrierPackage}
+                      onChange={e => setCarrierPackage(e.target.value)}
+                      className="w-full h-9 px-3 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-brand-500 cursor-pointer"
+                    >
+                      <option value="ALL">ALL</option>
+                      <option value="USPS">USPS</option>
+                      <option value="UPS">UPS</option>
+                      <option value="FedEx">FedEx</option>
+                      <option value="DHL">DHL</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 3. Weight Row */}
+                <div className="grid grid-cols-3 items-center gap-4 py-1 border-b border-slate-50">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Weight</label>
+                  <div className="col-span-2 flex gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={weightValue}
+                      onChange={e => setWeightValue(e.target.value)}
+                      className="w-2/3 h-9 px-3 border border-slate-200 rounded-lg text-xs text-slate-850 font-medium focus:outline-none focus:border-brand-500"
+                    />
+                    <select
+                      value={weightUnit}
+                      onChange={e => setWeightUnit(e.target.value)}
+                      className="w-1/3 h-9 px-2 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-650 focus:outline-none cursor-pointer"
+                    >
+                      <option value="oz">oz</option>
+                      <option value="lbs">lbs</option>
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 4. Cubic Preset Row */}
+                <div className="grid grid-cols-3 items-start gap-4 py-1 border-b border-slate-50">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1.5">Cubic</label>
+                  <div className="col-span-2 flex flex-wrap gap-1.5">
+                    {[
+                      { label: 'Cubic 10 (15x11x1)', l: '15.00', w: '11.00', h: '1.00' },
+                      { label: 'Cubic 30 (7x5x14)', l: '7.00', w: '5.00', h: '14.00' },
+                      { label: 'Cubic 40 (12x3x15)', l: '12.00', w: '3.00', h: '15.00' }
+                    ].map(p => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => { setSizeL(p.l); setSizeW(p.w); setSizeH(p.h); }}
+                        className="px-2.5 py-1.5 border border-slate-200 hover:border-brand-500 hover:bg-brand-50/55 rounded-lg text-[10px] font-bold text-slate-600 transition cursor-pointer focus:outline-none"
+                      >
+                        {p.label}
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* 5. Size (Inch) Row */}
+                <div className="grid grid-cols-3 items-center gap-4 py-1 border-b border-slate-50">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size (Inch)</label>
+                  <div className="col-span-2 flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={sizeL}
+                        onChange={e => setSizeL(e.target.value)}
+                        className="w-16 h-9 px-2 border border-slate-200 rounded-lg text-xs text-slate-800 text-center font-mono focus:outline-none focus:border-brand-500"
+                      />
+                      <span className="text-[10px] text-slate-400 font-bold">(L)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={sizeW}
+                        onChange={e => setSizeW(e.target.value)}
+                        className="w-16 h-9 px-2 border border-slate-200 rounded-lg text-xs text-slate-800 text-center font-mono focus:outline-none focus:border-brand-500"
+                      />
+                      <span className="text-[10px] text-slate-400 font-bold">(W)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={sizeH}
+                        onChange={e => setSizeH(e.target.value)}
+                        className="w-16 h-9 px-2 border border-slate-200 rounded-lg text-xs text-slate-800 text-center font-mono focus:outline-none focus:border-brand-500"
+                      />
+                      <span className="text-[10px] text-slate-400 font-bold">(H)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Get Rate Action Block */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={handleGetRates}
+                    disabled={isLoadingRates}
+                    className="px-4 h-9 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs focus:outline-none"
+                  >
+                    {isLoadingRates ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Search className="h-3.5 w-3.5" />
+                    )}
+                    Get Rate
+                  </button>
+                </div>
+
+                {/* 6. Service Selection Segment (Only after Get Rate) */}
+                {isLoadingRates && (
+                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-slate-400 border-t border-slate-100 animate-in fade-in duration-200">
+                    <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
+                    <p className="text-xs font-semibold">Retrieving rates…</p>
+                  </div>
                 )}
+
+                {hasFetchedRates && !isLoadingRates && (
+                  <div className="grid grid-cols-3 items-start gap-4 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1.5">Service</label>
+                    <div className="col-span-2 space-y-2">
+                      {(showAllRates ? rates : rates.slice(0, 2)).map((r, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setSelectedRate(r)}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition cursor-pointer text-left focus:outline-none ${
+                            selectedRate?.service === r.service
+                              ? 'border-brand-500 bg-brand-50/65 ring-2 ring-brand-150'
+                              : 'border-slate-150 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">{r.carrier} {r.service}</p>
+                            <p className="text-[10px] text-slate-400 font-sans mt-0.5">{r.days}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-extrabold text-slate-900">${r.price.toFixed(2)}</span>
+                            {selectedRate?.service === r.service && <Check className="h-3.5 w-3.5 text-brand-600 shrink-0" />}
+                          </div>
+                        </button>
+                      ))}
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowAllRates(prev => !prev)}
+                          className="text-xs font-bold text-rose-500 hover:text-rose-600 transition focus:outline-none inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          {showAllRates ? 'Show less ^' : 'Show more v'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
-              <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsRateModalOpen(false)} className="px-4 h-9 border border-slate-200 bg-white rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/50">
+                <button type="button" onClick={() => setIsRateModalOpen(false)} className="px-4 h-9 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer focus:outline-none">Cancel</button>
                 <button type="button" onClick={handleConfirmRate} disabled={!selectedRate || isLoadingRates}
-                  className="px-4 h-9 btn-primary-gradient rounded-lg text-sm font-bold cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
-                  Confirm & Generate
+                  className="px-4 h-9 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:pointer-events-none text-white rounded-lg text-xs font-bold cursor-pointer transition focus:outline-none shadow-xs">
+                  Create Shipment
                 </button>
               </div>
             </motion.div>
