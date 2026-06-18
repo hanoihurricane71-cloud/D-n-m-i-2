@@ -112,14 +112,10 @@ export function OrderManagementTab({
   const [pendingStatusUpdate, setPendingStatusUpdate] = React.useState<{ orderId: string, status: string } | null>(null);
   const hasActiveFilters =
     orderSearchQuery ||
-    orderProductQuery ||
     orderStyleFilter !== 'All Styles' ||
     orderColorFilter !== 'All Colors' ||
     orderSizeFilter !== 'All Sizes' ||
     orderStatusFilter !== 'All statuses' ||
-    orderCustomerFilter !== 'All Customers' ||
-    orderShippingStatusFilter !== 'All shipping statuses' ||
-    orderShipMethodFilter !== 'All methods' ||
     orderDateFrom ||
     orderDateTo;
 
@@ -165,37 +161,6 @@ export function OrderManagementTab({
           )}
         </div>
 
-        {/* Product/SKU Search */}
-        <div
-          className={`relative h-10 transition-all duration-300 ease-in-out ${
-            orderProductQuery ? 'w-80' : 'w-56 focus-within:w-80'
-          }`}
-        >
-          <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            value={orderProductQuery}
-            onChange={(e) => {
-              setOrderProductQuery(e.target.value);
-              setOrderCurrentPage(1);
-            }}
-            placeholder="SKU or Product Style"
-            className="w-full pl-9 pr-8 h-full text-sm bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 truncate transition-shadow"
-          />
-          {orderProductQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setOrderProductQuery('');
-                setOrderCurrentPage(1);
-              }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
         {/* Status Filter */}
         <FilterDropdown
           label="Order Status"
@@ -205,40 +170,6 @@ export function OrderManagementTab({
             setOrderStatusFilter(val);
             setOrderCurrentPage(1);
           }}
-        />
-
-        {/* Shipping Status Filter */}
-        <FilterDropdown
-          label="Shipping Status"
-          selected={orderShippingStatusFilter}
-          options={['All shipping statuses', 'Unknown', 'Pre Transit', 'In Transit', 'Out for Delivery', 'Delivered', 'Available For Pickup', 'Return To Sender', 'Failure', 'Cancelled']}
-          onSelect={(val) => {
-            setOrderShippingStatusFilter(val);
-            setOrderCurrentPage(1);
-          }}
-        />
-
-        {/* Shipping Method Filter */}
-        <FilterDropdown
-          label="Shipping Method"
-          selected={orderShipMethodFilter}
-          options={['All methods', 'UPS Ground', 'FedEx Express', 'DHL Worldwide', 'USPS Priority']}
-          onSelect={(val) => {
-            setOrderShipMethodFilter(val);
-            setOrderCurrentPage(1);
-          }}
-        />
-
-        {/* Customer Filter */}
-        <FilterDropdown
-          label="Customer"
-          selected={orderCustomerFilter}
-          options={['All Customers', 'Olivia Rhye', 'Acme Corp', 'Phoenix Baker', 'Lana Steiner', 'Demi Wilkinson']}
-          onSelect={(val) => {
-            setOrderCustomerFilter(val);
-            setOrderCurrentPage(1);
-          }}
-          showSearch={true}
         />
 
         {/* Unified Date Range Picker */}
@@ -367,8 +298,6 @@ export function OrderManagementTab({
               <th className="py-3 px-6 font-sans">Customer / Store Name</th>
               <th className="py-3 px-6 font-sans text-right">Qty</th>
               <th className="py-3 px-6 font-sans">Order Status</th>
-              <th className="py-3 px-6 font-sans">Shipping Status</th>
-              <th className="py-3 px-6 font-sans">Shipping Method</th>
               <th className="py-3 px-6 font-sans">Tracking</th>
               <th className="py-3 px-6 font-sans">Destination</th>
             </tr>
@@ -377,7 +306,7 @@ export function OrderManagementTab({
           <tbody>
             {orderPagedItems.length === 0 ? (
               <tr>
-                <td colSpan={10} className="h-64 text-center text-slate-400 font-medium">
+                <td colSpan={8} className="h-64 text-center text-slate-400 font-medium">
                   <div className="flex flex-col items-center justify-center h-full space-y-2">
                     <ClipboardList className="h-8 w-8 text-slate-300" />
                     <p>No orders found matching your filters.</p>
@@ -478,27 +407,22 @@ export function OrderManagementTab({
                       )}
                     </div>
                   </td>
-                  {/* Shipping Status */}
-                  <td className="py-3 px-6 font-medium whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full border ${
-                      order.shippingStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : order.shippingStatus === 'In Transit' ? 'bg-purple-50 text-purple-700 border-purple-200'
-                      : order.shippingStatus === 'Out for Delivery' ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                      : order.shippingStatus === 'Pre Transit' ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : order.shippingStatus === 'Available For Pickup' ? 'bg-teal-50 text-teal-700 border-teal-200'
-                      : order.shippingStatus === 'Return To Sender' ? 'bg-orange-50 text-orange-700 border-orange-200'
-                      : order.shippingStatus === 'Failure' ? 'bg-rose-50 text-rose-700 border-rose-200'
-                      : order.shippingStatus === 'Cancelled' ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
-                      : 'bg-slate-100 text-slate-700 border-slate-200 font-sans'
-                    }`}>
-                      {order.shippingStatus || 'Unknown'}
-                    </span>
-                  </td>
-                  {/* Shipping Method */}
-                  <td className="py-3 px-6 text-slate-700 whitespace-nowrap font-medium">{order.shippingMethod || '—'}</td>
                   {/* Tracking */}
                   <td className="py-3 px-6 font-medium whitespace-nowrap">
-                    {order.trackingNumber ? (
+                    {order.shipments && order.shipments.length > 0 ? (
+                      <div className="flex flex-col gap-1 max-y-[45px] overflow-y-auto pr-1">
+                        {order.shipments.map((shp) => (
+                          <div key={shp.trackingNumber} className="flex items-center justify-between gap-1 font-mono text-slate-600 bg-brand-50/40 border border-brand-100/50 rounded px-1.5 py-0.5 max-w-[130px]">
+                            <span className="select-all tracking-wide font-semibold text-[10px] truncate max-w-[75px]" title={shp.trackingNumber}>
+                              {shp.trackingNumber}
+                            </span>
+                            <span className="text-[8.5px] font-bold text-brand-700 bg-brand-100/60 px-1 py-0.1 rounded leading-none font-sans scale-90">
+                              {shp.carrier}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : order.trackingNumber ? (
                       <div className="flex items-center gap-1.5 font-mono text-slate-600">
                         <span className="select-all tracking-wide font-mono text-xs w-[82px] block truncate" title={order.trackingNumber}>
                           {order.trackingNumber}

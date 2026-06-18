@@ -76,13 +76,14 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       };
     }
 
-    // SHIPPED / DELIVERED / IN STOCK / COMPLETED / RETURN (Emerald/Green)
+    // SHIPPED / DELIVERED / IN STOCK / COMPLETED / RETURN / RECEIVED (Emerald/Green)
     if (
       normalized === 'shipped' ||
       normalized === 'delivered' ||
       normalized === 'in stock' || 
       normalized === 'completed' || 
-      normalized === 'return'
+      normalized === 'return' ||
+      normalized === 'received'
     ) {
       return {
         btn: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/70',

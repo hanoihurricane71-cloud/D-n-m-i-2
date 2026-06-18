@@ -49,6 +49,7 @@ interface PurchaseOrderTabProps {
   copiedPoId: string | null;
   handleCopyTracking: (id: string, tracking: string) => void;
   triggerToast: (text: string, type?: 'success' | 'info') => void;
+  onVerifyClick: (po: PurchaseOrder) => void;
 }
 
 export function PurchaseOrderTab({
@@ -75,6 +76,7 @@ export function PurchaseOrderTab({
   copiedPoId,
   handleCopyTracking,
   triggerToast,
+  onVerifyClick,
 }: PurchaseOrderTabProps) {
   return (
     <>
@@ -116,7 +118,7 @@ export function PurchaseOrderTab({
           {/* Order Status Filter */}
           <FilterDropdown
             label="Order status"
-            options={['All Statuses', 'New', 'Partial Received', 'Completed', 'Verified', 'Cancelled']}
+            options={['All Statuses', 'New', 'Partial Received', 'Received', 'Cancelled']}
             selected={selectedOrderStatus}
             onSelect={(val) => { setSelectedOrderStatus(val); setPoCurrentPage(1); }}
           />
@@ -187,44 +189,8 @@ export function PurchaseOrderTab({
           )}
         </div>
 
-        {/* Right aligned Operations & Tools */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {/* Export POs */}
-          <button
-            type="button"
-            onClick={() => {
-              try {
-                const headers = "WRO number,Customer,Order status,Total qty,Received qty,Incoming qty,Tracking,Created date,Created by\n";
-                const rows = filteredPurchaseOrders.map(po =>
-                  `"${po.poNumber}","${po.customer}","${po.orderStatus}",${po.totalQty},${po.receivedQty},${po.incomingQty},"${po.tracking}","${po.createdAt}","${po.createdBy}"`
-                ).join("\n");
-                const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.setAttribute("href", url);
-                link.setAttribute("download", `SwiftPOD-WROs-${new Date().toISOString().slice(0, 10)}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                triggerToast("WROs exported successfully!", "success");
-              } catch {
-                triggerToast("Export failed.", "info");
-              }
-            }}
-            className="inline-flex items-center justify-center gap-1.5 px-4 h-10 border border-slate-200 bg-white rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 cursor-pointer btn-secondary-sheen"
-          >
-            <Upload className="h-4 w-4 rotate-180 text-slate-500" />
-            <span>Export</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsCreatePOOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-4.5 h-10 btn-primary-gradient rounded-lg text-sm font-semibold cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create</span>
-          </button>
+        {/* Right aligned Operations & Tools hidden/removed */}
+        <div className="flex items-center gap-2.5 shrink-0 hidden">
         </div>
 
       </div>
@@ -234,8 +200,7 @@ export function PurchaseOrderTab({
         <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr className="bg-[#F8F9FA] text-slate-500 border-b border-slate-100 text-[11.5px] font-semibold uppercase tracking-wider whitespace-nowrap">
-              <th className="py-3 px-6 select-none font-sans">WRO number</th>
-              <th className="py-3 px-6 font-sans">Customer</th>
+              <th className="py-3 px-6 select-none font-sans font-bold">WRO number</th>
               <th className="py-3 px-6 font-sans">Order status</th>
               <th className="py-3 px-6 font-sans text-right">Total qty</th>
               <th className="py-3 px-6 font-sans text-right">Received qty</th>
@@ -256,13 +221,14 @@ export function PurchaseOrderTab({
               </th>
               <th className="py-3 px-6 font-sans">Created at</th>
               <th className="py-3 px-6 font-sans">Created by</th>
+              <th className="sticky right-0 bg-[#F8F9FA] z-10 py-3 px-6 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]"></th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100/90 text-[13px] text-slate-600">
             {paginatedPOs.length > 0 ? (
               paginatedPOs.map((po) => (
-                <tr key={po.id} className="hover:bg-slate-50/40 transition-colors whitespace-nowrap">
+                <tr key={po.id} className="group hover:bg-slate-50/40 transition-colors whitespace-nowrap">
                   <td className="py-3 px-6">
                     <button
                       type="button"
@@ -272,7 +238,6 @@ export function PurchaseOrderTab({
                       {po.poNumber}
                     </button>
                   </td>
-                  <td className="py-3 px-6 font-sans font-medium text-slate-700 max-w-[150px] truncate" title={po.customer}>{po.customer}</td>
                   <td className="py-3 px-6 font-sans">
                     {po.orderStatus === 'New' && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 border border-rose-100 text-rose-600">New</span>
@@ -280,11 +245,8 @@ export function PurchaseOrderTab({
                     {po.orderStatus === 'Partial Received' && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-100 text-blue-600">Partial Received</span>
                     )}
-                    {po.orderStatus === 'Completed' && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600">Completed</span>
-                    )}
-                    {po.orderStatus === 'Verified' && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 border border-purple-100 text-purple-600">Verified</span>
+                    {po.orderStatus === 'Received' && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600">Received</span>
                     )}
                     {po.orderStatus === 'Cancelled' && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-500">Cancelled</span>
@@ -313,6 +275,19 @@ export function PurchaseOrderTab({
                   <td className="py-3 px-6 font-sans font-medium text-slate-700">{po.ageDays} days</td>
                   <td className="py-3 px-6 font-sans font-medium text-slate-700">{po.createdAt}</td>
                   <td className="py-3 px-6 font-mono text-xs font-medium text-slate-700">{po.createdBy}</td>
+                  <td className="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 py-2.5 px-6 shrink-0 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] text-center">
+                    {po.orderStatus !== 'Received' && po.orderStatus !== 'Cancelled' ? (
+                      <button
+                        type="button"
+                        onClick={() => onVerifyClick(po)}
+                        className="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded text-xs font-bold shadow-xs transition duration-150 cursor-pointer"
+                      >
+                        Verify
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 text-xs font-medium italic select-none">Verified</span>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (

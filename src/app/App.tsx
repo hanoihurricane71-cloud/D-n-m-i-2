@@ -54,7 +54,8 @@ import {
   UserCheck,
   Inbox,
   Store,
-  Building
+  Building,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -86,6 +87,23 @@ import { PurchaseOrderTab } from './components/PurchaseOrderTab';
 import { AdditionTab } from './components/AdditionTab';
 import { LocationTab } from './components/LocationTab';
 import { StoreManagementTab } from './components/StoreManagementTab';
+
+export const getServicesList = (weight: number, l: number, w: number, h: number) => {
+  const scale = (weight / 47.92) * 0.4 + ((l * w * h) / (7 * 5 * 14)) * 0.6;
+  const safeScale = Number.isFinite(scale) && scale > 0.05 ? scale : 1.0;
+
+  const rate1 = (8.61 * safeScale).toFixed(2);
+  const rate2 = (9.06 * safeScale).toFixed(2);
+  const rate3 = (13.67 * safeScale).toFixed(2);
+  const rate4 = (14.67 * safeScale).toFixed(2);
+
+  return [
+    { name: 'USPS GroundAdvantage - NSA Account', est: 'Est delivery 3 days', price: `$${rate1}`, carrier: 'USPS' },
+    { name: 'USPS GroundAdvantage - Commercial Rate', est: 'Est delivery 3 days', price: `$${rate2}`, carrier: 'USPS' },
+    { name: 'USPS Priority - NSA Account', est: 'Est delivery 3 days', price: `$${rate3}`, carrier: 'USPS' },
+    { name: 'USPS Priority - Commercial Rate', est: 'Est delivery 3 days', price: `$${rate4}`, carrier: 'USPS' }
+  ];
+};
 
 
 interface TypeRowItem {
@@ -241,8 +259,58 @@ export default function App() {
   const [importText, setImportText] = useState('');
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null);
 
+  // --- Shipping Label and Shipment Info Custom States ---
+  const [labelFormOrderNo, setLabelFormOrderNo] = useState('');
+  const [labelFormClient, setLabelFormClient] = useState('');
+  const [labelFormCurrency, setLabelFormCurrency] = useState('USD');
+  const [labelFormFirstName, setLabelFormFirstName] = useState('');
+  const [labelFormLastName, setLabelFormLastName] = useState('');
+  const [labelFormCompany, setLabelFormCompany] = useState('');
+  const [labelFormEmail, setLabelFormEmail] = useState('');
+  const [labelFormPhone, setLabelFormPhone] = useState('');
+  const [labelFormCountry, setLabelFormCountry] = useState('United States');
+  const [labelFormAddress1, setLabelFormAddress1] = useState('');
+  const [labelFormAddress2, setLabelFormAddress2] = useState('');
+  const [labelFormCity, setLabelFormCity] = useState('');
+  const [labelFormZip, setLabelFormZip] = useState('');
+  const [labelFormDimUnit, setLabelFormDimUnit] = useState('Inches (in)');
+  const [labelFormWeightUnit, setLabelFormWeightUnit] = useState('Ounces (oz)');
+  const [labelFormPackages, setLabelFormPackages] = useState<Array<{
+    index: number;
+    refId: string;
+    savedPkg: string;
+    weight: string;
+    length: string;
+    width: string;
+    height: string;
+    items?: string[];
+  }>>([]);
+  const [labelFormShipOption, setLabelFormShipOption] = useState<'tier' | 'carrier'>('carrier');
+  const [labelFormSelectedCarrier, setLabelFormSelectedCarrier] = useState('UPS Ground');
+  const [labelFormCarrierPackage, setLabelFormCarrierPackage] = useState('Package');
+  const [labelFormGetRateClicked, setLabelFormGetRateClicked] = useState(false);
+  const [labelFormLoadingRates, setLabelFormLoadingRates] = useState(false);
+  const [labelFormSelectedRateIndex, setLabelFormSelectedRateIndex] = useState(-1);
+  const [isShipmentViewModalOpen, setIsShipmentViewModalOpen] = useState(false);
+  const [selectedShipmentForView, setSelectedShipmentForView] = useState<any>(null);
+  const [shipmentPreviewFormat, setShipmentPreviewFormat] = useState<string>('PDF');
+  const [senderName, setSenderName] = useState('SwiftPOD LLC');
+  const [senderAddress, setSenderAddress] = useState('2070 S 7th St. Ste E , San Jose, CA 95112');
+  const [senderFirstName, setSenderFirstName] = useState('Hiep');
+  const [senderLastName, setSenderLastName] = useState('Admin');
+  const [senderCompany, setSenderCompany] = useState('SwiftPOD LLC');
+  const [senderEmail, setSenderEmail] = useState('admin@swiftpod.com');
+  const [senderPhone, setSenderPhone] = useState('408-555-0199');
+  const [senderCountry, setSenderCountry] = useState('United States');
+  const [senderAddress1, setSenderAddress1] = useState('2070 S 7th St. Ste E');
+  const [senderAddress2, setSenderAddress2] = useState('');
+  const [senderCity, setSenderCity] = useState('San Jose');
+  const [senderZip, setSenderZip] = useState('95112');
+  const [labelFormDestinationType, setLabelFormDestinationType] = useState<'Domestic' | 'International'>('Domestic');
+  const [isSenderEditing, setIsSenderEditing] = useState(false);
+
   // Active Navigation item
-  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Label' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location' | 'Store'>('Product');
+  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location' | 'Store'>('Product');
 
   // User Profile Dropdown state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -653,6 +721,7 @@ export default function App() {
   // Selected Order Detail for Drawer
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderManagementItem | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
+  const [isLabelPopupOpen, setIsLabelPopupOpen] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [orderRejectReasonText, setOrderRejectReasonText] = useState('');
   const [isRejectingOrder, setIsRejectingOrder] = useState(false);
@@ -1174,6 +1243,98 @@ export default function App() {
   const [isEditingWroNo, setIsEditingWroNo] = useState(false);
   const [tempWroNo, setTempWroNo] = useState('');
 
+  // WRO Verify and Comments States
+  const [verifyingPO, setVerifyingPO] = useState<PurchaseOrder | null>(null);
+  const [verifiedQtyInput, setVerifiedQtyInput] = useState<number>(0);
+  const [wroCommentText, setWroCommentText] = useState('');
+
+  const handleInitVerify = (po: PurchaseOrder) => {
+    setVerifyingPO(po);
+    setVerifiedQtyInput(po.receivedQty ?? 0);
+  };
+
+  const handleConfirmVerify = () => {
+    if (!verifyingPO) return;
+    const qty = verifiedQtyInput;
+    if (qty < 0) {
+      triggerToast('Received quantity cannot be negative', 'info');
+      return;
+    }
+    
+    setPurchaseOrders(prev => prev.map(po => {
+      if (po.id === verifyingPO.id) {
+        let nextStatus: PurchaseOrder['orderStatus'] = po.orderStatus;
+        if (qty >= po.totalQty) {
+          nextStatus = 'Received';
+        } else if (qty > 0) {
+          nextStatus = 'Partial Received';
+        } else {
+          nextStatus = 'New';
+        }
+        return {
+          ...po,
+          receivedQty: qty,
+          incomingQty: Math.max(0, po.totalQty - qty),
+          orderStatus: nextStatus
+        };
+      }
+      return po;
+    }));
+
+    // Update selectedPODetail too if same ID is open
+    setSelectedPODetail(prev => {
+      if (prev && prev.id === verifyingPO.id) {
+        let nextStatus: PurchaseOrder['orderStatus'] = prev.orderStatus;
+        if (qty >= prev.totalQty) {
+          nextStatus = 'Received';
+        } else if (qty > 0) {
+          nextStatus = 'Partial Received';
+        } else {
+          nextStatus = 'New';
+        }
+        return {
+          ...prev,
+          receivedQty: qty,
+          incomingQty: Math.max(0, prev.totalQty - qty),
+          orderStatus: nextStatus
+        };
+      }
+      return prev;
+    });
+
+    triggerToast(`WRO ${verifyingPO.poNumber} verified with received qty ${qty}/${verifyingPO.totalQty}!`, 'success');
+    setVerifyingPO(null);
+  };
+
+  const handleAddWroComment = () => {
+    if (!selectedPODetail || !wroCommentText.trim()) return;
+    const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newComment = {
+      id: `co_${Date.now()}`,
+      text: wroCommentText.trim(),
+      createdAt: nowStr,
+      createdBy: 'Hiep Admin'
+    };
+    
+    setPurchaseOrders(prev => prev.map(po => {
+      if (po.id === selectedPODetail.id) {
+        return {
+          ...po,
+          comments: [newComment, ...(po.comments || [])]
+        };
+      }
+      return po;
+    }));
+    
+    setSelectedPODetail(prev => prev ? {
+      ...prev,
+      comments: [newComment, ...(prev.comments || [])]
+    } : null);
+    
+    setWroCommentText('');
+    triggerToast('Comment added successfully!', 'success');
+  };
+
   const handleUpdateWroNumber = (newWroNo: string) => {
     if (!selectedPODetail) return;
     const oldWroNo = selectedPODetail.poNumber;
@@ -1644,52 +1805,27 @@ export default function App() {
   const isFilterActive = useMemo(() => {
     return (
       searchQuery !== '' ||
-      selectedStyle !== 'All Styles' ||
-      selectedColor !== 'All Colors' ||
-      selectedSize !== 'All Sizes' ||
       selectedStock !== 'All Statuses' ||
       selectedCustomer !== 'All Customers' ||
       createdDateFilter !== 'All Dates' ||
       selectedStyleTypeFilter !== 'All Types'
     );
-  }, [searchQuery, selectedStyle, selectedColor, selectedSize, selectedStock, selectedCustomer, createdDateFilter, selectedStyleTypeFilter]);
+  }, [searchQuery, selectedStock, selectedCustomer, createdDateFilter, selectedStyleTypeFilter]);
 
   // Handle Filtering Math
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      // 1. Search Query
+      // 1. Search Query (Name or SKU only)
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesName = product.name.toLowerCase().includes(query);
         const matchesSku = product.sku.toLowerCase().includes(query);
-        const matchesCustomer = product.customer.toLowerCase().includes(query);
-        const matchesUser = product.user.toLowerCase().includes(query);
-        if (!matchesName && !matchesSku && !matchesCustomer && !matchesUser) {
+        if (!matchesName && !matchesSku) {
           return false;
         }
       }
 
-      // 2. Style Filter
-      if (selectedStyle !== 'All Styles') {
-        const filterStr = selectedStyle.toLowerCase();
-        if (!product.sku.toLowerCase().includes(filterStr)) return false;
-      }
-
-      // 3. Color Filter
-      if (selectedColor !== 'All Colors') {
-        const filterStr = selectedColor.toLowerCase();
-        if (!product.sku.toLowerCase().includes(filterStr)) return false;
-      }
-
-      // 4. Size Filter
-      if (selectedSize !== 'All Sizes') {
-        const filterStr = selectedSize.toLowerCase();
-        // Look for boundaries style e.g. " / XL"
-        if (!product.sku.toLowerCase().includes(`/ ${filterStr.toLowerCase()}`) && 
-            !product.sku.toLowerCase().endsWith(filterStr.toLowerCase())) return false;
-      }
-
-      // 5. Stock Status Filter
+      // 2. Stock Status Filter
       if (selectedStock !== 'All Statuses') {
         if (selectedStock === 'In stock') {
           if (!product.stockQty.toLowerCase().includes('in stock')) return false;
@@ -1698,12 +1834,12 @@ export default function App() {
         }
       }
 
-      // 6. Customer Filter
+      // 3. Customer Filter
       if (selectedCustomer !== 'All Customers') {
         if (product.customer !== selectedCustomer) return false;
       }
 
-      // 7. Created Date Picker Filter
+      // 4. Created Date Picker Filter
       if (createdDateFilter !== 'All Dates') {
         const productDateStr = parseDateString(product.createdAt);
         if (productDateStr !== createdDateFilter) return false;
@@ -1711,7 +1847,7 @@ export default function App() {
 
       return true;
     });
-  }, [products, searchQuery, selectedStyle, selectedColor, selectedSize, selectedStock, selectedCustomer, createdDateFilter]);
+  }, [products, searchQuery, selectedStock, selectedCustomer, createdDateFilter]);
 
   // Filtered views for secondary tabs based on Search Query and Master States
   const filteredTypeItems = useMemo(() => {
@@ -1775,7 +1911,7 @@ export default function App() {
   const searchPlaceholder = useMemo(() => {
     switch (activeTab) {
       case 'Product':
-        return 'Product name';
+        return 'Product name / SKU';
       case 'Type':
         return 'Type name';
       case 'Style':
@@ -1833,18 +1969,18 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveNavItem('Label')}
+              onClick={() => setActiveNavItem('Purchase order')}
               className={`
                 w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Label'
+                ${activeNavItem === 'Purchase order'
                   ? 'bg-slate-100/90 text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }
               `}
             >
-              <Tag className={`h-5 w-5 ${activeNavItem === 'Label' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>Label</span>
-              {activeNavItem === 'Label' && (
+              <Inbox className={`h-5 w-5 ${activeNavItem === 'Purchase order' ? 'text-brand-600' : 'text-slate-400'}`} />
+              <span>WRO</span>
+              {activeNavItem === 'Purchase order' && (
                 <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
               )}
             </button>
@@ -2037,8 +2173,6 @@ export default function App() {
               triggerToast={triggerToast}
               onUpdateOrderStatus={handleUpdateOrderStatus}
             />
-          ) : activeNavItem === 'Label' ? (
-            <LabelTab products={products} />
           ) : activeNavItem === 'Product' ? (
             <ProductTab
               activeTab={activeTab}
@@ -2107,6 +2241,7 @@ export default function App() {
           copiedPoId={copiedPoId}
           handleCopyTracking={handleCopyTracking}
           triggerToast={triggerToast}
+          onVerifyClick={handleInitVerify}
         />
       ) : activeNavItem === 'Addition' ? (
         <AdditionTab
@@ -3213,17 +3348,19 @@ export default function App() {
                     </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOrderDetailOpen(false);
-                    setIsRejectingOrder(false);
-                    setOrderRejectReasonText('');
-                  }}
-                  className="p-1.5 hover:bg-slate-200/60 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOrderDetailOpen(false);
+                      setIsRejectingOrder(false);
+                      setOrderRejectReasonText('');
+                    }}
+                    className="p-1.5 hover:bg-slate-200/60 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Modal Content */}
@@ -3373,34 +3510,29 @@ export default function App() {
                             )}
                           </div>
                           <div>
-                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Shipping Status</span>
-                            <div className="flex flex-col gap-1 mt-1 font-sans">
-                              <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                selectedOrderDetail.shippingStatus === 'Delivered'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : selectedOrderDetail.shippingStatus === 'In Transit'
-                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                  : selectedOrderDetail.shippingStatus === 'Out for Delivery'
-                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                  : selectedOrderDetail.shippingStatus === 'Pre Transit'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : selectedOrderDetail.shippingStatus === 'Available For Pickup'
-                                  ? 'bg-teal-50 text-teal-700 border-teal-200'
-                                  : selectedOrderDetail.shippingStatus === 'Return To Sender'
-                                  ? 'bg-orange-50 text-orange-700 border-orange-200'
-                                  : selectedOrderDetail.shippingStatus === 'Failure'
-                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                  : selectedOrderDetail.shippingStatus === 'Cancelled'
-                                  ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
-                                  : 'bg-slate-100 text-slate-700 border-slate-200'
-                              }`}>
-                                {selectedOrderDetail.shippingStatus || 'Unknown'}
-                              </span>
-                            </div>
-                          </div>
-                          <div>
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Total Quantity</span>
                             <span className="text-sm font-semibold text-slate-800 mt-1 block font-mono">{selectedOrderDetail.quantity}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Tracking Number</span>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-sm font-semibold font-mono text-slate-800 select-all block">
+                                {selectedOrderDetail.trackingNumber || 'Awaiting Shipment'}
+                              </span>
+                              {selectedOrderDetail.trackingNumber && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(selectedOrderDetail.trackingNumber || '');
+                                    triggerToast('Tracking number copied!', 'success');
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-650 rounded transition hover:bg-slate-50 cursor-pointer inline-flex focus:outline-none animate-in fade-in"
+                                  title="Copy Tracking Number"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -3566,114 +3698,17 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Shipment Information section */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Shipment Information</h4>
-                      <div className="border border-slate-200/60 rounded-xl p-4 bg-white shadow-xs">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tracking Number</span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-sm font-normal font-mono text-slate-700 select-all block">
-                                {selectedOrderDetail.trackingNumber || 'Awaiting Shipment'}
-                              </span>
-                              {selectedOrderDetail.trackingNumber && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(selectedOrderDetail.trackingNumber || '');
-                                    triggerToast('Tracking number copied!', 'success');
-                                  }}
-                                  className="p-1 text-slate-400 hover:text-slate-600 rounded transition hover:bg-slate-50 cursor-pointer inline-flex focus:outline-none"
-                                  title="Copy Tracking Number"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Carrier</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.carrier || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Service Level</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.service || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ship Date</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.shipDate || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Weight</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.weight || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Size / Dimensions</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.size || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Price / Cost</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.price || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shipping Label</span>
-                            {selectedOrderDetail.shipmentInfo?.labelLink ? (
-                              <div className="flex gap-2 mt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(selectedOrderDetail.shipmentInfo?.labelLink || '');
-                                    triggerToast('Label link copied!', 'success');
-                                  }}
-                                  className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-350 rounded-md text-[10px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition flex items-center gap-1 focus:outline-none"
-                                  title="Copy Label Link"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                  Copy
-                                </button>
-                                <a
-                                  href={selectedOrderDetail.shipmentInfo.labelLink}
-                                  target="_blank"
-                                  rel="_noreferrer"
-                                  className="px-2.5 py-1 bg-brand-600 !text-white rounded-md text-[10px] font-bold hover:bg-brand-700 inline-flex items-center gap-1 focus:outline-none transition cursor-pointer"
-                                  title="Open Label"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  Open
-                                </a>
-                              </div>
-                            ) : (
-                              <span className="text-sm font-normal text-slate-400 mt-0.5 block italic">Not generated</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
 
                   {/* Right Column (1/3 width on md+): Internal Notes & Timeline */}
                   <div className="border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-6 flex flex-col h-full self-stretch min-h-0">
 
-                    {/* Timeline & Notes section — scrollable */}
-                    <div className="flex flex-col flex-1 min-h-0 space-y-3 pl-1 pt-1 overflow-hidden">
-                      <h4 className="text-sm font-bold text-slate-800 shrink-0">Timeline & Notes</h4>
+                    {/* Timeline & Notes section — Boxed/Framed */}
+                    <div className="border border-slate-200 rounded-xl bg-slate-50/50 p-4 space-y-3 flex flex-col min-h-0">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest shrink-0">Timeline & Notes</h4>
 
-                      {/* Unified Notes Input - Moved above timeline, removed sticky and shadow */}
-                      <div className="shrink-0 w-full mb-2">
+                      {/* Unified Notes Input */}
+                      <div className="shrink-0 w-full">
                         <textarea
                           value={orderCommentText}
                           onChange={(e) => setOrderCommentText(e.target.value)}
@@ -3728,7 +3763,7 @@ export default function App() {
                         </button>
                       </div>
 
-                      <div className="overflow-y-auto flex-1 scrollbar-thin pl-0 pr-1">
+                      <div className="overflow-y-auto max-h-[140px] scrollbar-thin pl-0 pr-1 flex-1">
                         <div className="relative border-l-2 border-slate-100 ml-2 pl-3.5 space-y-4 py-1">
                           {selectedOrderDetail.activityHistory && selectedOrderDetail.activityHistory.length > 0 ? (
                             selectedOrderDetail.activityHistory.map((act) => (
@@ -3768,8 +3803,104 @@ export default function App() {
                           )}
                         </div>
                       </div>
-
                     </div>
+
+                    {/* Shipment Information section */}
+                    {selectedOrderDetail.shipmentInfo ? (
+                      <div className="space-y-3 mt-4">
+                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest pl-1">Shipment Information</h4>
+                        <div className="border border-slate-200/60 rounded-xl p-4 bg-white shadow-xs space-y-3 font-sans text-xs">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Carrier</span>
+                              <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
+                                {selectedOrderDetail.shipmentInfo.carrier}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Service Level</span>
+                              <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
+                                {selectedOrderDetail.shipmentInfo.service}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ship Date</span>
+                              <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
+                                {selectedOrderDetail.shipmentInfo.shipDate}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tracking Number</span>
+                              <span className="text-xs font-mono font-semibold text-brand-700 mt-0.5 block select-all">
+                                {selectedOrderDetail.shipmentInfo.trackingNumber}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-slate-100 pt-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedShipmentForView(selectedOrderDetail.shipmentInfo);
+                                setIsShipmentViewModalOpen(true);
+                              }}
+                              className="text-[11px] font-bold text-brand-600 hover:text-brand-700 cursor-pointer flex items-center gap-1"
+                            >
+                              <span>View Shipment Details</span>
+                              <span>→</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Action Button - Create Shipping Label */}
+                    {!selectedOrderDetail.shipmentInfo && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLabelFormOrderNo(selectedOrderDetail.orderNumber || '');
+                            setLabelFormClient(selectedOrderDetail.customerStore || 'Olivia Rhye Store');
+                            setLabelFormCurrency('USD');
+                            setLabelFormFirstName(selectedOrderDetail.customerStore?.split(' ')[0] || 'Olivia');
+                            setLabelFormLastName(selectedOrderDetail.customerStore?.split(' ').slice(1).join(' ') || 'Rhye');
+                            setLabelFormCompany(selectedOrderDetail.customerStore || 'Acme Corp');
+                            setLabelFormEmail(`${selectedOrderDetail.customerStore?.toLowerCase().replace(/\s+/g, '') || 'customer'}@example.com`);
+                            setLabelFormPhone('555-019-2834');
+                            
+                            const isIntl = selectedOrderDetail.destinationType === 'International' || selectedOrderDetail.destination?.toLowerCase().includes('tokyo');
+                            setLabelFormCountry(isIntl ? 'Japan' : 'United States');
+                            setLabelFormAddress1(selectedOrderDetail.destination || '2070 S 7th St. Ste E');
+                            setLabelFormAddress2('');
+                            setLabelFormCity(isIntl ? 'Tokyo' : 'San Jose');
+                            setLabelFormZip(isIntl ? '100-0001' : '95112');
+                            
+                            // Initialize package
+                            setLabelFormGetRateClicked(false);
+                            setLabelFormLoadingRates(false);
+                            setLabelFormSelectedRateIndex(-1);
+                            setLabelFormCarrierPackage('Package');
+                            setLabelFormPackages([{
+                              index: 1,
+                              refId: `PKG-${selectedOrderDetail.orderNumber}-${Math.floor(1000 + Math.random() * 9000)}`,
+                              savedPkg: 'Custom',
+                              weight: '47.92',
+                              length: '7.00',
+                              width: '5.00',
+                              height: '14.00',
+                              items: selectedOrderDetail.orderItems?.map(item => `${item.productName} (Qty: ${item.quantity})`) || [`Classic Crewneck Hoodie (Qty: ${selectedOrderDetail.quantity})`]
+                            }]);
+                            
+                            setIsLabelPopupOpen(true);
+                          }}
+                          className="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-brand-100"
+                        >
+                          Create Shipping Label
+                        </button>
+                      </div>
+                    )}
+
                   </div>
 
                 </div>
@@ -3904,11 +4035,11 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden border border-slate-100 z-50 text-xs font-sans"
+              className="relative bg-white rounded-xl shadow-2xl max-w-4xl w-full flex flex-col overflow-hidden border border-slate-100 z-50 text-xs font-sans"
             >
               <div className="px-5 py-5 bg-white border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left duration-200">
                     <h3 className="text-base font-bold text-slate-800 tracking-tight">
                       WRO: <span className="font-mono text-blue-600 select-all font-semibold ml-1">{selectedPODetail.poNumber}</span>
                     </h3>
@@ -3929,123 +4060,206 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="p-5 space-y-4">
-                {/* Information cards group */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Customer</span>
-                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.customer || 'No customer'}</span>
+              {/* Two Column Layout container */}
+              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 max-h-[70vh] overflow-y-auto">
+                
+                {/* Left Column (2/3 width) - Details & Table info */}
+                <div className="col-span-2 p-5 space-y-4">
+                  {/* Information cards group */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                      <span className="block text-xs font-medium text-slate-400">Total quantity</span>
+                      <span className="text-sm font-semibold text-slate-800 block mt-1.5 font-mono font-bold">
+                        {selectedPODetail.items ? selectedPODetail.items.reduce((sum, item) => sum + item.qty, 0) : 0} items
+                      </span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                      <span className="block text-xs font-medium text-slate-400">Shipping carrier</span>
+                      <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.shippingCarrier}</span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                      <span className="block text-xs font-medium text-slate-400">Status</span>
+                      <div className="mt-1.5">
+                        {selectedPODetail.orderStatus === 'New' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 border border-rose-100 text-rose-600">
+                            New
+                          </span>
+                        )}
+                        {selectedPODetail.orderStatus === 'Partial Received' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-100 text-blue-600">
+                            Partial Received
+                          </span>
+                        )}
+                        {selectedPODetail.orderStatus === 'Received' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600">
+                            Received
+                          </span>
+                        )}
+                        {selectedPODetail.orderStatus === 'Cancelled' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-500">
+                            Cancelled
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Total quantity</span>
-                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 font-mono">
-                      {selectedPODetail.items ? selectedPODetail.items.reduce((sum, item) => sum + item.qty, 0) : 0} items
+
+                  {/* Tracking input visual detail */}
+                  <div className="p-3 bg-slate-50/30 border border-slate-100 rounded-lg flex items-center justify-between text-xs font-sans">
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <span className="text-xs font-medium text-slate-400">Tracking:</span>
+                      <span className="font-mono text-xs font-semibold text-slate-755 select-all ml-1">{selectedPODetail.tracking}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyTracking(selectedPODetail.id, selectedPODetail.tracking)}
+                      className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 border rounded-md transition cursor-pointer font-medium ${
+                        copiedPoId === selectedPODetail.id
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                      }`}
+                    >
+                      {copiedPoId === selectedPODetail.id ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Items detail list inside this PO */}
+                  <div className="space-y-2">
+                    <span className="block text-xs font-semibold text-slate-500">
+                      Items list
                     </span>
-                  </div>
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Shipping carrier</span>
-                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.shippingCarrier}</span>
-                  </div>
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Status</span>
-                    <div className="mt-1.5">
-                      {selectedPODetail.orderStatus === 'New' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 border border-rose-100 text-rose-600">
-                          New
-                        </span>
-                      )}
-                      {selectedPODetail.orderStatus === 'Partial Received' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-100 text-blue-600">
-                          Partial Received
-                        </span>
-                      )}
-                      {selectedPODetail.orderStatus === 'Completed' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600">
-                          Completed
-                        </span>
-                      )}
-                      {selectedPODetail.orderStatus === 'Verified' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 border border-purple-100 text-purple-600">
-                          Verified
-                        </span>
-                      )}
-                      {selectedPODetail.orderStatus === 'Cancelled' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-500">
-                          Cancelled
-                        </span>
-                      )}
+                    
+                    <div className="border border-slate-100 rounded-lg overflow-hidden bg-white max-h-[220px] overflow-y-auto shadow-xs">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-550 border-b border-slate-100 font-semibold text-[11px] uppercase tracking-wide select-none">
+                            <th className="py-2.5 px-4 font-semibold uppercase">Product info</th>
+                            <th className="py-2.5 px-4 font-semibold uppercase">SKU</th>
+                            <th className="py-2.5 px-4 font-semibold uppercase text-right">Qty</th>
+                            <th className="py-2.5 px-4 font-semibold uppercase text-right">Received Qty</th>
+                            <th className="py-2.5 px-4 font-semibold uppercase text-right">Incoming Qty</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {selectedPODetail.items && selectedPODetail.items.length > 0 ? (
+                            selectedPODetail.items.map((item, id) => (
+                              <tr key={id} className="hover:bg-slate-50/50">
+                                <td className="py-2.5 px-4 font-bold text-slate-800">{item.productInfo}</td>
+                                <td className="py-2.5 px-4 text-slate-700 font-mono text-[11px] font-medium">{item.sku}</td>
+                                <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{item.qty}</td>
+                                <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{selectedPODetail.receivedQty ?? item.qty}</td>
+                                <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{selectedPODetail.incomingQty ?? item.qty}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={5} className="py-6 text-center text-slate-400">
+                                No item details attached.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
 
-                {/* Tracking input visual detail */}
-                <div className="p-3 bg-slate-50/30 border border-slate-100 rounded-lg flex items-center justify-between text-xs font-sans">
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <span className="text-xs font-medium text-slate-400">Tracking:</span>
-                    <span className="font-mono text-xs font-semibold text-slate-750 select-all ml-1">{selectedPODetail.tracking}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyTracking(selectedPODetail.id, selectedPODetail.tracking)}
-                    className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 border rounded-md transition cursor-pointer font-medium ${
-                      copiedPoId === selectedPODetail.id
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    {copiedPoId === selectedPODetail.id ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-600 animate-in fade-in zoom-in duration-200" />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                {/* Right Column (1/3 width) - Timeline Comments & Verify action */}
+                <div className="col-span-1 p-5 flex flex-col space-y-4 max-h-full min-h-0 text-left">
+                  {/* Verify Action Panel */}
+                  {selectedPODetail.orderStatus !== 'Received' && selectedPODetail.orderStatus !== 'Cancelled' ? (
+                    <div className="bg-amber-50/60 rounded-xl p-3.5 border border-amber-200/80 font-sans space-y-2.5 select-none">
+                      <span className="block font-bold text-amber-900 text-xs uppercase tracking-wider">Verify receiving</span>
+                      <button
+                        type="button"
+                        onClick={() => handleInitVerify(selectedPODetail)}
+                        className="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1 min-h-[34px]"
+                      >
+                        Verify Received Qty
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-slate-400 font-medium italic text-center select-none">
+                      This WRO has already been verified and received.
+                    </div>
+                  )}
 
-                {/* Items detail list inside this PO */}
-                <div className="space-y-2">
-                  <span className="block text-xs font-medium text-slate-405">
-                    Items list
-                  </span>
-                  
-                  <div className="border border-slate-100 rounded-lg overflow-hidden bg-white max-h-[180px] overflow-y-auto shadow-xs">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-550 border-b border-slate-100 font-semibold text-[11px] uppercase tracking-wide select-none">
-                          <th className="py-2.5 px-4 font-semibold uppercase">Product info</th>
-                          <th className="py-2.5 px-4 font-semibold uppercase">SKU</th>
-                          <th className="py-2.5 px-4 font-semibold uppercase text-right">Qty</th>
-                          <th className="py-2.5 px-4 font-semibold uppercase text-right">Received Qty</th>
-                          <th className="py-2.5 px-4 font-semibold uppercase text-right">Incoming Qty</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {selectedPODetail.items && selectedPODetail.items.length > 0 ? (
-                          selectedPODetail.items.map((item, id) => (
-                            <tr key={id} className="hover:bg-slate-50/50">
-                              <td className="py-2.5 px-4 font-bold text-slate-800">{item.productInfo}</td>
-                              <td className="py-2.5 px-4 text-slate-700 font-mono text-[11px] font-medium">{item.sku}</td>
-                              <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{item.qty}</td>
-                              <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{item.receivedQty ?? item.qty}</td>
-                              <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{item.incomingQty ?? item.qty}</td>
-                            </tr>
+                  {/* Unified Comment Area Box */}
+                  <div className="border border-slate-200 rounded-xl bg-slate-50/50 p-4 space-y-3 flex flex-col min-h-0">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest shrink-0 select-none">WRO Timeline Comments</h4>
+
+                    {/* textarea input save */}
+                    <div className="shrink-0 w-full space-y-1.5">
+                      <textarea
+                        value={wroCommentText}
+                        onChange={(e) => setWroCommentText(e.target.value)}
+                        placeholder="Write comment/note..."
+                        rows={2}
+                        className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddWroComment();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddWroComment}
+                        className="w-full h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer"
+                      >
+                        Save comment
+                      </button>
+                    </div>
+
+                    {/* Timeline elements scroll area */}
+                    <div className="overflow-y-auto max-h-[160px] scrollbar-thin pl-0 pr-1 flex-1">
+                      <div className="relative border-l-2 border-slate-100 ml-2 pl-3.5 space-y-4 py-1">
+                        {selectedPODetail.comments && selectedPODetail.comments.length > 0 ? (
+                          selectedPODetail.comments.map((comment) => (
+                            <div key={comment.id} className="relative animate-in fade-in slide-in-from-top-1 duration-150">
+                              {/* Dot icon */}
+                              <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center">
+                                <span className="h-1 w-1 rounded-full bg-slate-350" />
+                              </span>
+                              <div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs font-normal text-slate-800 whitespace-pre-wrap leading-relaxed">{comment.text}</span>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 font-sans">
+                                    <span className="font-semibold text-slate-500">{comment.createdBy}</span>
+                                    <span>•</span>
+                                    <span>{comment.createdAt}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           ))
                         ) : (
-                          <tr>
-                            <td colSpan={5} className="py-6 text-center text-slate-400">
-                              No item details attached.
-                            </td>
-                          </tr>
+                          <div className="relative">
+                            <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center">
+                              <span className="h-1 w-1 rounded-full bg-slate-350" />
+                            </span>
+                            <div>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-normal text-slate-800 italic text-[11px]">No comments added yet</span>
+                              </div>
+                            </div>
+                          </div>
                         )}
-
-                      </tbody>
-                    </table>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
 
@@ -4059,6 +4273,111 @@ export default function App() {
                   className="px-5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer outline-none md:btn-secondary-sheen"
                 >
                   Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* VERIFY WRO CONFIRMATION POPUP MODAL */}
+      <AnimatePresence>
+        {verifyingPO && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto font-sans">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setVerifyingPO(null)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-100 z-[60] text-xs"
+            >
+              <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <span className="font-bold text-slate-800 text-sm">Verify Received Quantity</span>
+                <button
+                  type="button"
+                  onClick={() => setVerifyingPO(null)}
+                  className="rounded hover:bg-slate-200 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 text-left">
+                <p className="text-slate-500 text-xs">
+                  Please confirm the actual physical quantity received for WRO <strong className="text-slate-800 font-mono text-sm">{verifyingPO.poNumber}</strong>.
+                </p>
+
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">Total Quantity:</span>
+                    <span className="font-mono font-bold text-slate-850 text-sm">{verifyingPO.totalQty} units</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">Currently Received:</span>
+                    <span className="font-mono font-bold text-slate-600">{verifyingPO.receivedQty} units</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">Received quantity</label>
+                  <div className="relative rounded-lg shadow-xs">
+                    <input
+                      type="number"
+                      min={0}
+                      max={verifyingPO.totalQty}
+                      value={verifiedQtyInput}
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        setVerifiedQtyInput(isNaN(parsed) ? 0 : parsed);
+                      }}
+                      className="w-full pl-3 pr-[110px] h-10 text-sm border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono font-semibold"
+                    />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setVerifiedQtyInput(0)}
+                        className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition font-bold uppercase cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVerifiedQtyInput(verifyingPO.totalQty)}
+                        className="text-[10px] px-2 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded transition font-bold uppercase cursor-pointer"
+                      >
+                        Max ({verifyingPO.totalQty})
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    If received quantity ({verifiedQtyInput}) equals the total ({verifyingPO.totalQty}), status automatically becomes Received.
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-5 py-4.5 bg-slate-50 border-t border-slate-100 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setVerifyingPO(null)}
+                  className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmVerify}
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  Confirm Verify
                 </button>
               </div>
             </motion.div>
@@ -5260,6 +5579,986 @@ export default function App() {
                     Authorize & Reconvert
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SHIPPING LABEL CREATION MODAL */}
+      <AnimatePresence>
+        {isLabelPopupOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            {/* Modal backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLabelPopupOpen(false)}
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
+            />
+ 
+            {/* Modal Dialog container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100 z-50 my-8 mx-auto"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 bg-brand-50 text-brand-600 rounded-lg flex items-center justify-center">
+                    <Printer className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Create shipping label</h2>
+                    <p className="text-[10px] text-slate-400 font-medium">Configure dimensions, weight, and carrier routing details</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsLabelPopupOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-full transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto max-h-[75vh] select-none text-slate-700 font-sans text-xs">
+                {/* Header Inputs Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-100 pb-5 mb-5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Order *</label>
+                    <input
+                      type="text"
+                      value={labelFormOrderNo}
+                      disabled
+                      className="w-full h-9 px-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 font-semibold text-xs focus:ring-1 focus:ring-brand-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Shipping Destination Type *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabelFormDestinationType('Domestic');
+                          setLabelFormCountry('United States');
+                          setLabelFormCity('San Jose');
+                          setLabelFormZip('95112');
+                          triggerToast('Destination updated to Domestic (United States)', 'info');
+                        }}
+                        className={`h-9 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                          labelFormDestinationType === 'Domestic'
+                            ? 'bg-brand-50 border-brand-500 text-brand-700 font-extrabold'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        Domestic / Nội địa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabelFormDestinationType('International');
+                          setLabelFormCountry('Japan');
+                          setLabelFormCity('Tokyo');
+                          setLabelFormZip('100-0001');
+                          triggerToast('Destination updated to International (Japan)', 'info');
+                        }}
+                        className={`h-9 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                          labelFormDestinationType === 'International'
+                            ? 'bg-brand-50 border-brand-500 text-brand-700 font-extrabold'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        International / Quốc tế
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main 2-Column Split */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                  
+                  {/* Left Column: Sender and Recipient Details */}
+                  <div className="space-y-6">
+                    {/* Sender Details */}
+                    <div className="border border-slate-200/80 rounded-xl p-4 bg-slate-50/50 relative">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Sender details</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsSenderEditing(!isSenderEditing)}
+                          className="text-[11px] font-bold text-brand-600 hover:text-brand-700 cursor-pointer underline decoration-dotted font-sans"
+                        >
+                          {isSenderEditing ? 'Save Details' : 'Edit'}
+                        </button>
+                      </div>
+
+                      {isSenderEditing ? (
+                        <div className="grid grid-cols-2 gap-3 pb-2 mt-2 animate-in fade-in duration-100 font-sans text-xs">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">First name *</label>
+                            <input
+                              type="text"
+                              value={senderFirstName}
+                              onChange={(e) => setSenderFirstName(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Last name *</label>
+                            <input
+                              type="text"
+                              value={senderLastName}
+                              onChange={(e) => setSenderLastName(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Company</label>
+                            <input
+                              type="text"
+                              value={senderCompany}
+                              onChange={(e) => setSenderCompany(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Email</label>
+                            <input
+                              type="email"
+                              value={senderEmail}
+                              onChange={(e) => setSenderEmail(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Phone</label>
+                            <input
+                              type="text"
+                              value={senderPhone}
+                              onChange={(e) => setSenderPhone(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Country *</label>
+                            <input
+                              type="text"
+                              value={senderCountry}
+                              onChange={(e) => setSenderCountry(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Address Line 1 *</label>
+                            <input
+                              type="text"
+                              value={senderAddress1}
+                              onChange={(e) => setSenderAddress1(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Address Line 2 (Optional)</label>
+                            <input
+                              type="text"
+                              value={senderAddress2}
+                              onChange={(e) => setSenderAddress2(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">City *</label>
+                            <input
+                              type="text"
+                              value={senderCity}
+                              onChange={(e) => setSenderCity(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">ZIP / Postcode *</label>
+                            <input
+                              type="text"
+                              value={senderZip}
+                              onChange={(e) => setSenderZip(e.target.value)}
+                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-1 font-sans text-xs">
+                          <p className="font-bold text-slate-800">{senderFirstName} {senderLastName}</p>
+                          {senderCompany && <p className="text-slate-500 text-[11px] font-medium">{senderCompany}</p>}
+                          <p className="text-slate-600 mt-1 leading-relaxed">
+                            {senderAddress1}
+                            {senderAddress2 && `, ${senderAddress2}`}
+                            <br />
+                            {senderCity}, {senderZip}
+                            <br />
+                            {senderCountry}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recipient Details */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold text-slate-800 tracking-tight uppercase tracking-wider pl-0.5">Recipient details</h3>
+                      <div className="grid grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">First name *</label>
+                          <input
+                            type="text"
+                            value={labelFormFirstName}
+                            onChange={(e) => setLabelFormFirstName(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Last name *</label>
+                          <input
+                            type="text"
+                            value={labelFormLastName}
+                            onChange={(e) => setLabelFormLastName(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Company</label>
+                          <input
+                            type="text"
+                            value={labelFormCompany}
+                            onChange={(e) => setLabelFormCompany(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={labelFormEmail}
+                            onChange={(e) => setLabelFormEmail(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Phone</label>
+                          <input
+                            type="text"
+                            value={labelFormPhone}
+                            onChange={(e) => setLabelFormPhone(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Country *</label>
+                          <input
+                            type="text"
+                            value={labelFormCountry}
+                            onChange={(e) => setLabelFormCountry(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Address Line 1</label>
+                          <input
+                            type="text"
+                            value={labelFormAddress1}
+                            onChange={(e) => setLabelFormAddress1(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Address Line 2 (Optional)</label>
+                          <input
+                            type="text"
+                            value={labelFormAddress2}
+                            onChange={(e) => setLabelFormAddress2(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">City *</label>
+                          <input
+                            type="text"
+                            value={labelFormCity}
+                            onChange={(e) => setLabelFormCity(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">ZIP / Postcode *</label>
+                          <input
+                            type="text"
+                            value={labelFormZip}
+                            onChange={(e) => setLabelFormZip(e.target.value)}
+                            className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Packages & Carrier Selection */}
+                  <div className="space-y-6">
+                    {(() => {
+                      const activePkg = labelFormPackages[0] || { weight: '47.92', length: '7.00', width: '5.00', height: '14.00' };
+                      
+                      const updateActivePkg = (updates: any) => {
+                        setLabelFormPackages(prev => {
+                          if (prev.length === 0) {
+                            return [{
+                              index: 1,
+                              refId: `PKG-${labelFormOrderNo}-${Math.floor(1000 + Math.random() * 9000)}`,
+                              savedPkg: 'Custom',
+                              weight: '47.92',
+                              length: '7.00',
+                              width: '5.00',
+                              height: '14.00',
+                              ...updates
+                            }];
+                          }
+                          return prev.map((p, idx) => idx === 0 ? { ...p, ...updates } : p);
+                        });
+                      };
+
+                      const handleIncrement = (field: 'weight' | 'length' | 'width' | 'height', amount: number) => {
+                        const currentVal = parseFloat(activePkg[field] || '0');
+                        const nextVal = Math.max(0, currentVal + amount);
+                        updateActivePkg({ [field]: nextVal.toFixed(2) });
+                      };
+
+                      return (
+                        <div className="border border-slate-200 rounded-xl p-5 bg-slate-50/20 space-y-5">
+                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                              <Package className="h-4 w-4 text-brand-500" />
+                              <span>Package Details / Chi tiết kiện hàng</span>
+                            </h3>
+                            <div className="flex gap-2">
+                              <select
+                                value={labelFormDimUnit}
+                                onChange={(e) => setLabelFormDimUnit(e.target.value)}
+                                className="h-7 text-[10px] px-2 border border-slate-200 rounded-lg bg-white text-slate-600 font-bold focus:outline-hidden"
+                              >
+                                <option value="Inches (in)">in</option>
+                                <option value="Centimeters (cm)">cm</option>
+                              </select>
+                              <select
+                                value={labelFormWeightUnit}
+                                onChange={(e) => setLabelFormWeightUnit(e.target.value)}
+                                className="h-7 text-[10px] px-2 border border-slate-200 rounded-lg bg-white text-slate-600 font-bold focus:outline-hidden"
+                              >
+                                <option value="Ounces (oz)">oz</option>
+                                <option value="Pounds (lbs)">lbs</option>
+                                <option value="Kilograms (kg)">kg</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-[125px_1fr] items-center gap-y-4 text-xs">
+                            {/* Account */}
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</div>
+                            <div className="font-sans font-extrabold text-slate-800 text-sm">MyStore</div>
+
+                            {/* Carrier/Package */}
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Carrier/Package</div>
+                            <div>
+                              <select
+                                value={labelFormCarrierPackage}
+                                onChange={(e) => setLabelFormCarrierPackage(e.target.value)}
+                                className="w-full h-9 px-3 border border-slate-200 rounded-lg text-xs font-semibold bg-white text-slate-750 outline-hidden focus:ring-1 focus:ring-brand-500"
+                              >
+                                <option value="Package">Package</option>
+                                <option value="Flat Rate Envelope">Flat Rate Envelope</option>
+                                <option value="Large Poly Mailer">Large Poly Mailer</option>
+                                <option value="Box Preset">Box Preset</option>
+                              </select>
+                            </div>
+
+                            {/* Weight */}
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Weight</div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-28 pr-1 shadow-2xs">
+                                <input
+                                  type="text"
+                                  value={activePkg.weight}
+                                  onChange={(e) => updateActivePkg({ weight: e.target.value })}
+                                  className="w-full text-center text-xs font-semibold px-2 h-full outline-hidden text-slate-800"
+                                />
+                                <div className="flex flex-col h-7 w-5 divide-y divide-slate-100 border-l border-slate-100">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleIncrement('weight', 1)}
+                                    className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[8px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleIncrement('weight', -1)}
+                                    className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[8px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                  >
+                                    ▼
+                                  </button>
+                                </div>
+                              </div>
+                              <span className="text-[10px] text-slate-450 font-bold uppercase">{labelFormWeightUnit.slice(-3, -1) || 'oz'}</span>
+                            </div>
+
+                            {/* Cubic Presets */}
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider align-top pt-2">Cubic</div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateActivePkg({ length: '15.00', width: '11.00', height: '1.00' });
+                                  triggerToast('Applied Cubic 10 preset dimensions', 'info');
+                                }}
+                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-[10px] font-bold text-slate-600 rounded-lg transition-all"
+                              >
+                                Cubic 10 (15x11x1)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateActivePkg({ length: '7.00', width: '5.00', height: '14.00' });
+                                  triggerToast('Applied Cubic 30 preset dimensions', 'info');
+                                }}
+                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-[10px] font-bold text-slate-600 rounded-lg transition-all"
+                              >
+                                Cubic 30 (7x5x14)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateActivePkg({ length: '12.00', width: '3.00', height: '15.00' });
+                                  triggerToast('Applied Cubic 40 preset dimensions', 'info');
+                                }}
+                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-[10px] font-bold text-slate-600 rounded-lg transition-all"
+                              >
+                                Cubic 40 (12x3x15)
+                              </button>
+                            </div>
+
+                            {/* Size L W H */}
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size ({labelFormDimUnit.slice(-3, -1) || 'in'})</div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {/* Length (L) */}
+                              <div className="flex items-center gap-1">
+                                <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-20 pr-1 shadow-2xs">
+                                  <input
+                                    type="text"
+                                    value={activePkg.length}
+                                    onChange={(e) => updateActivePkg({ length: e.target.value })}
+                                    className="w-full text-center text-xs font-semibold px-1 h-full outline-hidden text-slate-800"
+                                  />
+                                  <div className="flex flex-col h-7 w-4 divide-y divide-slate-100 border-l border-slate-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('length', 1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('length', -1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-bold">(L)</span>
+                              </div>
+
+                              {/* Width (W) */}
+                              <div className="flex items-center gap-1">
+                                <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-20 pr-1 shadow-2xs">
+                                  <input
+                                    type="text"
+                                    value={activePkg.width}
+                                    onChange={(e) => updateActivePkg({ width: e.target.value })}
+                                    className="w-full text-center text-xs font-semibold px-1 h-full outline-hidden text-slate-800"
+                                  />
+                                  <div className="flex flex-col h-7 w-4 divide-y divide-slate-100 border-l border-slate-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('width', 1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('width', -1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-bold">(W)</span>
+                              </div>
+
+                              {/* Height (H) */}
+                              <div className="flex items-center gap-1">
+                                <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-20 pr-1 shadow-2xs">
+                                  <input
+                                    type="text"
+                                    value={activePkg.height}
+                                    onChange={(e) => updateActivePkg({ height: e.target.value })}
+                                    className="w-full text-center text-xs font-semibold px-1 h-full outline-hidden text-slate-800"
+                                  />
+                                  <div className="flex flex-col h-7 w-4 divide-y divide-slate-100 border-l border-slate-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('height', 1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('height', -1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-bold">(H)</span>
+                              </div>
+                            </div>
+
+                            {/* Get Rate Action button row */}
+                            <div className="col-span-2 py-1 flex justify-start pl-[125px]">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLabelFormLoadingRates(true);
+                                  setLabelFormGetRateClicked(false);
+                                  setTimeout(() => {
+                                    setLabelFormLoadingRates(false);
+                                    setLabelFormGetRateClicked(true);
+                                    setLabelFormSelectedRateIndex(0);
+                                    setLabelFormSelectedCarrier('USPS GroundAdvantage - NSA Account');
+                                    triggerToast('Shipping rates calculated!', 'success');
+                                  }, 600);
+                                }}
+                                className="bg-brand-600 hover:bg-brand-700 text-white font-bold h-9 px-5 rounded-lg text-[11px] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                              >
+                                {labelFormLoadingRates ? (
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-3.5 w-3.5" />
+                                )}
+                                <span>Get Rate / Lấy giá cước</span>
+                              </button>
+                            </div>
+
+                            {/* Service rates list */}
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider align-top pt-2">Service</div>
+                            <div className="col-span-1">
+                              {labelFormLoadingRates ? (
+                                <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 flex flex-col justify-center items-center h-28 space-y-2">
+                                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-brand-500 border-t-transparent" />
+                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Calculating live carrier rates...</span>
+                                </div>
+                              ) : labelFormGetRateClicked ? (
+                                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                  {getServicesList(
+                                    parseFloat(activePkg.weight || '47.92'),
+                                    parseFloat(activePkg.length || '7'),
+                                    parseFloat(activePkg.width || '5'),
+                                    parseFloat(activePkg.height || '14')
+                                  ).map((srv, sIdx) => {
+                                    const isSelected = labelFormSelectedRateIndex === sIdx;
+                                    return (
+                                      <div
+                                        key={srv.name}
+                                        onClick={() => {
+                                          setLabelFormSelectedRateIndex(sIdx);
+                                          setLabelFormSelectedCarrier(srv.name);
+                                        }}
+                                        className={`p-2.5 rounded-lg border cursor-pointer transition flex items-center justify-between ${
+                                          isSelected
+                                            ? 'bg-rose-50/10 border-rose-500 shadow-sm'
+                                            : 'border-slate-200 bg-white hover:bg-slate-50/50'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="radio"
+                                            checked={isSelected}
+                                            readOnly
+                                            className="accent-rose-600 h-3 w-3"
+                                          />
+                                          <div>
+                                            <div className="text-[11px] font-extrabold text-slate-800">{srv.name}</div>
+                                            <div className="text-[9px] text-slate-400 mt-0.5 font-bold uppercase">{srv.est}</div>
+                                          </div>
+                                        </div>
+                                        <div className="text-sm font-black text-rose-700 tracking-tight">
+                                          {srv.price}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="p-5 border border-dashed border-slate-200 rounded-xl bg-slate-50/30 text-center text-slate-400 text-[10.5px] py-8 leading-relaxed">
+                                  Nhấp nút <strong className="text-brand-600">"Get Rate"</strong> ở trên để tải danh sách các mức giá cho cấu hình gói hàng này.
+                                </div>
+                              )}
+                            </div>
+
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 font-semibold text-xs">
+                <button
+                  type="button"
+                  onClick={() => setIsLabelPopupOpen(false)}
+                  className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg cursor-pointer transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!labelFormFirstName.trim() || !labelFormLastName.trim() || !labelFormAddress1.trim() || !labelFormCity.trim() || !labelFormZip.trim()) {
+                      triggerToast('Please fill out all required fields (*)', 'info');
+                      return;
+                    }
+
+                    // Generate dynamic tracking codes
+                    let trackNo = '';
+                    let carrierName = '';
+                    let serviceName = '';
+                    let displayMethod = '';
+                    let ticketPrice = '$8.90';
+
+                    const activeFirstPkg = labelFormPackages[0] || { weight: '47.92', length: '7.00', width: '5.00', height: '14.00' };
+
+                    if (labelFormGetRateClicked && labelFormSelectedRateIndex !== -1) {
+                      const list = getServicesList(
+                        parseFloat(activeFirstPkg.weight || '47.92'),
+                        parseFloat(activeFirstPkg.length || '7.00'),
+                        parseFloat(activeFirstPkg.width || '5.00'),
+                        parseFloat(activeFirstPkg.height || '14.00')
+                      );
+                      const chosen = list[labelFormSelectedRateIndex];
+                      if (chosen) {
+                        trackNo = '9400' + Math.floor(100000000000000 + Math.random() * 899999999999999);
+                        carrierName = 'USPS';
+                        serviceName = chosen.name;
+                        displayMethod = chosen.name.includes('Priority') ? 'USPS Priority' : 'USPS GroundAdvantage';
+                        ticketPrice = chosen.price;
+                      } else {
+                        trackNo = '9400' + Math.floor(100000000000000 + Math.random() * 899999999999999);
+                        carrierName = 'USPS';
+                        serviceName = 'USPS GroundAdvantage';
+                        displayMethod = 'USPS GroundAdvantage';
+                        ticketPrice = '$8.90';
+                      }
+                    } else if (labelFormShipOption === 'tier') {
+                      trackNo = '1Z' + Math.floor(1000 + Math.random() * 9000) + 'AA' + Math.floor(10 + Math.random() * 89) + Math.floor(100000 + Math.random() * 899999);
+                      carrierName = 'UPS';
+                      serviceName = 'UPS standard (Gelato Suggested)';
+                      displayMethod = 'UPS Standard';
+                      ticketPrice = '$9.50';
+                    } else if (labelFormSelectedCarrier.includes('UPS')) {
+                      trackNo = '1Z999AA10123' + Math.floor(100000 + Math.random() * 899999);
+                      carrierName = 'UPS';
+                      serviceName = 'UPS Ground';
+                      displayMethod = 'UPS Ground';
+                      ticketPrice = '$12.50';
+                    } else if (labelFormSelectedCarrier.includes('FedEx')) {
+                      trackNo = '7832' + Math.floor(100000000 + Math.random() * 899999999);
+                      carrierName = 'FedEx';
+                      serviceName = 'FedEx Express Overnight';
+                      displayMethod = 'FedEx Express';
+                      ticketPrice = '$24.00';
+                    } else if (labelFormSelectedCarrier.includes('USPS')) {
+                      trackNo = '9400' + Math.floor(100000000000000 + Math.random() * 899999999999999);
+                      carrierName = 'USPS';
+                      serviceName = 'USPS Priority Mail';
+                      displayMethod = 'USPS Priority';
+                      ticketPrice = '$8.90';
+                    } else {
+                      trackNo = 'JD014' + Math.floor(1000000000 + Math.random() * 8999999999);
+                      carrierName = 'DHL';
+                      serviceName = 'DHL Express Air';
+                      displayMethod = 'DHL Express';
+                      ticketPrice = '$45.50';
+                    }
+
+                    const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const todayTimeStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    
+                    const generatedShipment = {
+                      trackingNumber: trackNo,
+                      carrier: carrierName,
+                      service: serviceName,
+                      shipDate: todayStr,
+                      shippingMethod: displayMethod,
+                      weight: `${labelFormPackages.reduce((acc, p) => acc + (parseFloat(p.weight) || 0), 0)} ${labelFormWeightUnit.slice(-3, -1)}`,
+                      size: `${labelFormPackages[0]?.length || '10'} x ${labelFormPackages[0]?.width || '8'} x ${labelFormPackages[0]?.height || '6'} ${labelFormDimUnit.slice(-3, -1)}`,
+                      price: ticketPrice,
+                      labelLink: 'https://www.ups.com/assets/resources/images/zpl-label-sample.png',
+                      printedDate: todayTimeStr + ' (SwiftPOD)',
+                      senderDetails: {
+                        name: `${senderFirstName} ${senderLastName}`,
+                        company: senderCompany,
+                        address: `${senderAddress1}${senderAddress2 ? ' ' + senderAddress2 : ''}, ${senderCity}, ${senderZip}, ${senderCountry}`
+                      },
+                      recipientDetails: {
+                        firstName: labelFormFirstName,
+                        lastName: labelFormLastName,
+                        company: labelFormCompany,
+                        email: labelFormEmail,
+                        phone: labelFormPhone,
+                        country: labelFormCountry,
+                        address1: labelFormAddress1,
+                        address2: labelFormAddress2,
+                        city: labelFormCity,
+                        zip: labelFormZip
+                      }
+                    };
+
+                    const newAct = {
+                      id: `act_ship_${Date.now()}`,
+                      date: todayTimeStr,
+                      action: `Created Shipping Label. Carrier: ${carrierName}, Tracking: "${trackNo}"`,
+                      performedBy: 'Hiep Admin'
+                    };
+
+                    // Update in our master orders array
+                    setOrders(prev => prev.map(o => {
+                      if (o.id === selectedOrderDetail.id) {
+                        const existingShipments = o.shipments || [];
+                        const updatedOrder: OrderManagementItem = {
+                          ...o,
+                          orderStatus: o.orderStatus === 'New' ? 'Prepared' as const : o.orderStatus,
+                          shippingStatus: 'Pre Transit' as const,
+                          trackingNumber: trackNo,
+                          shipmentInfo: generatedShipment,
+                          shipments: [...existingShipments, generatedShipment],
+                          activityHistory: [newAct, ...(o.activityHistory || [])]
+                        };
+                        return updatedOrder;
+                      }
+                      return o;
+                    }));
+
+                    // Update in current open details state
+                    setSelectedOrderDetail(prev => {
+                      if (!prev) return null;
+                      const existingShipments = prev.shipments || [];
+                      return {
+                        ...prev,
+                        orderStatus: prev.orderStatus === 'New' ? 'Prepared' as const : prev.orderStatus,
+                        shippingStatus: 'Pre Transit' as const,
+                        trackingNumber: trackNo,
+                        shipmentInfo: generatedShipment,
+                        shipments: [...existingShipments, generatedShipment],
+                        activityHistory: [newAct, ...(prev.activityHistory || [])]
+                      };
+                    });
+
+                    setIsLabelPopupOpen(false);
+                    triggerToast(`Shipping label generated for package reference successfully!`, 'success');
+                  }}
+                  className="px-5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Create & Save Label</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SHIPMENT VIEW MODAL (VIEW DETAIL OF CREATED SHIPMENT) */}
+      <AnimatePresence>
+        {isShipmentViewModalOpen && selectedShipmentForView && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            {/* Modal backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsShipmentViewModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+
+            {/* Modal Dialog container - Clean White Popup */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 10 }}
+              transition={{ duration: 0.18 }}
+              className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 z-50 my-8 mx-auto text-slate-800 animate-in fade-in zoom-in-95 duration-100 font-sans"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+                <div className="flex flex-col gap-1 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-900 tracking-tight text-sm">Print Shipment Label</span>
+                    <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded font-mono uppercase">{selectedShipmentForView.carrier}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Tracking: <code className="bg-slate-50 px-1 py-0.5 rounded border border-slate-100 text-brand-600 font-mono font-bold select-all">{selectedShipmentForView.trackingNumber}</code>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Select format dropdown */}
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={shipmentPreviewFormat}
+                      onChange={(e) => {
+                        setShipmentPreviewFormat(e.target.value);
+                        triggerToast(`Switched preview to ${e.target.value} format`, 'info');
+                      }}
+                      className="bg-slate-50 border border-slate-200 text-slate-705 text-xs rounded-lg px-2 py-1 font-semibold focus:outline-none focus:border-brand-500 hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      <option value="PDF">PDF (.pdf)</option>
+                      <option value="ZPL">ZPL (.zpl)</option>
+                      <option value="EPL">EPL (.epl)</option>
+                      <option value="PNG">Image (.png)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsShipmentViewModalOpen(false)}
+                    className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body - Framed Gray Print Preview Area */}
+              <div className="p-6 bg-slate-200 border-b border-slate-150 flex flex-col items-center justify-center relative min-h-[440px]">
+                
+                {/* Print Layout Overlay markings to mimic standard Ctrl+P layout */}
+                <div className="absolute top-2 left-4 text-[9px] font-mono text-slate-400 uppercase select-none tracking-wider">
+                  Target: 4.00" x 6.00" ({shipmentPreviewFormat} format)
+                </div>
+                <div className="absolute bottom-2 right-4 text-[9px] font-mono text-slate-400 select-none">
+                  Scale: 100% Fit
+                </div>
+
+                {/* Printable High-Fidelity Sticker centered on simulated gray printer canvas */}
+                <div className="w-full max-w-[280px] bg-white border border-slate-350 rounded-xs p-4 text-slate-950 font-sans shadow-lg select-all relative overflow-hidden transition-transform duration-200">
+                  
+                  {/* Watermark badge for raw ZPL/EPL if selected */}
+                  {(shipmentPreviewFormat === 'ZPL' || shipmentPreviewFormat === 'EPL') && (
+                    <div className="absolute top-12 -right-10 bg-amber-500 text-white text-[7px] font-black py-0.5 px-10 rotate-45 select-none text-center shadow-xs">
+                      {shipmentPreviewFormat} CORE STRIP
+                    </div>
+                  )}
+
+                  {/* Header carrier routing */}
+                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-2 font-black leading-none tracking-tighter">
+                    <div className="text-[17px]">
+                      {selectedShipmentForView.carrier === 'UPS' ? 'UPS GROUND' :
+                       selectedShipmentForView.carrier === 'FedEx' ? 'FEDEX PRIORITY' :
+                       selectedShipmentForView.carrier === 'USPS' ? 'USPS FIRST-CLASS' : 'DHL AIR'}
+                    </div>
+                  </div>
+
+                  {/* From address block */}
+                  <div className="text-[8.5px] font-bold leading-tight scale-y-95 transform origin-top mb-1.5 text-left">
+                    <span className="block font-black text-[6.5px] uppercase tracking-wide">SHIP FROM:</span>
+                    {selectedShipmentForView.senderDetails?.name || 'SwiftPOD LLC'}
+                    <br />
+                    {selectedShipmentForView.senderDetails?.address || '2070 S 7th St. Ste E , San Jose'}
+                  </div>
+
+                  {/* Ship To address block */}
+                  <div className="border-t border-slate-400 pt-1.5 mb-2 text-left">
+                    <span className="block font-black text-[6.5px] uppercase tracking-wide">SHIP TO:</span>
+                    <p className="text-[10.5px] font-extrabold leading-tight">
+                      {selectedShipmentForView.recipientDetails?.firstName} {selectedShipmentForView.recipientDetails?.lastName}
+                    </p>
+                    <p className="text-[8.5px] font-semibold leading-tight mt-0.5">
+                      {selectedShipmentForView.recipientDetails?.company || 'Acme Group Hub'}
+                      <br />
+                      {selectedShipmentForView.recipientDetails?.address1}
+                      {selectedShipmentForView.recipientDetails?.address2 && `, ${selectedShipmentForView.recipientDetails.address2}`}
+                      <br />
+                      <span className="font-extrabold text-[9.5px]">{selectedShipmentForView.recipientDetails?.city?.toUpperCase()}, {selectedShipmentForView.recipientDetails?.zip}</span>
+                    </p>
+                  </div>
+
+                  {/* BARCODE GRAPHIC */}
+                  <div className="flex flex-col items-center justify-center py-2 space-y-1 select-none border-t border-slate-400">
+                    <div className="w-full h-11 flex items-stretch gap-[1.5px] scale-x-95">
+                      {[1, 3, 1, 1, 4, 1, 2, 1, 3, 1, 2, 4, 1, 1, 3, 2, 1, 1, 4, 1, 2, 1, 3, 1, 2, 4, 1, 1, 3, 2, 1, 4, 1, 2, 1, 3, 1, 2, 4].map((width, barIdx) => (
+                        <div
+                          key={barIdx}
+                          className={`flex-1 ${barIdx % 2 === 0 ? 'bg-slate-950' : 'bg-transparent'}`}
+                          style={{ flexGrow: width }}
+                        />
+                      ))}
+                    </div>
+                    <span className="font-mono text-[8.5px] font-black tracking-widest mt-0.5 text-center block">
+                      *(1Z) {selectedShipmentForView.trackingNumber}*
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-slate-50 flex items-center justify-end gap-2.5 font-semibold text-xs rounded-b-xl border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsShipmentViewModalOpen(false)}
+                  className="px-4 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg transition font-bold cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerToast(`Downloaded ${shipmentPreviewFormat} payload package successfully.`, "success");
+                  }}
+                  className="px-4 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg transition font-bold cursor-pointer flex items-center gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Download {shipmentPreviewFormat}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerToast("Sent print job to local thermo printer spooler.", "success");
+                    setIsShipmentViewModalOpen(false);
+                  }}
+                  className="px-5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition font-bold cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>Print Label</span>
+                </button>
               </div>
             </motion.div>
           </div>

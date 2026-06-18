@@ -30,7 +30,7 @@ export interface PurchaseOrderItem {
 export interface PurchaseOrder {
   id: string;
   poNumber: string;
-  orderStatus: 'New' | 'Partial Received' | 'Completed' | 'Verified' | 'Cancelled';
+  orderStatus: 'New' | 'Partial Received' | 'Received' | 'Cancelled';
   totalQty: number;
   receivedQty: number;
   incomingQty: number;
@@ -42,6 +42,12 @@ export interface PurchaseOrder {
   shippingCarrier: string;
   customer: string;
   items: PurchaseOrderItem[];
+  comments?: {
+    id: string;
+    text: string;
+    createdAt: string;
+    createdBy: string;
+  }[];
 }
 
 export interface AdditionItem {
@@ -118,6 +124,35 @@ export interface OrderManagementItem {
     labelLink?: string;
     printedDate?: string;
   };
+  shipments?: Array<{
+    trackingNumber: string;
+    carrier: string;
+    service: string;
+    shipDate: string;
+    shippingMethod?: string;
+    weight?: string;
+    size?: string;
+    price?: string;
+    labelLink?: string;
+    printedDate?: string;
+    senderDetails?: {
+      name: string;
+      company?: string;
+      address: string;
+    };
+    recipientDetails?: {
+      firstName: string;
+      lastName: string;
+      company?: string;
+      email?: string;
+      phone?: string;
+      country: string;
+      address1: string;
+      address2?: string;
+      city: string;
+      zip: string;
+    };
+  }>;
   internalNotes?: string;
   activityHistory?: Array<{
     id: string;

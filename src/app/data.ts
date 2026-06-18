@@ -273,7 +273,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
   {
     id: 'po3',
     poNumber: '1782625',
-    orderStatus: 'Completed',
+    orderStatus: 'Received',
     totalQty: 22,
     receivedQty: 22,
     incomingQty: 22,
@@ -292,7 +292,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
   {
     id: 'po4',
     poNumber: '1782626',
-    orderStatus: 'Completed',
+    orderStatus: 'Received',
     totalQty: 30,
     receivedQty: 30,
     incomingQty: 30,
@@ -329,7 +329,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
   {
     id: 'po6',
     poNumber: '1782628',
-    orderStatus: 'Verified',
+    orderStatus: 'Received',
     totalQty: 10,
     receivedQty: 10,
     incomingQty: 10,

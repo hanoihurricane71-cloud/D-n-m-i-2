@@ -216,34 +216,8 @@ export function ProductTab({
   return (
     <>
       {/* Header context: Product details */}
-      <div className="px-6 pt-6">
+      <div className="px-6 pt-6 pb-2">
         <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Product</h1>
-
-        {/* Primary category subtabs */}
-        <div className="flex items-center gap-6 mt-4 border-b border-slate-100 overflow-x-auto scrollbar-none" id="product-category-tabs">
-          {(['Product', 'Type', 'Style', 'Color', 'Size'] as TabType[]).map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`
-                  pb-3 font-semibold text-sm transition-all duration-150 relative cursor-pointer block whitespace-nowrap
-                  ${isActive ? 'text-brand-600 font-bold' : 'text-slate-400 hover:text-slate-700'}
-                `}
-              >
-                <span>{tab}</span>
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabUnderbar"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600 rounded-full"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Combined Filters / Action Buttons Bar */}
@@ -279,9 +253,6 @@ export function ProductTab({
           {/* Product-specific filters */}
           {activeTab === 'Product' && (
             <>
-              <FilterDropdown label="Style" options={STYLE_OPTIONS} selected={selectedStyle} onSelect={(val) => { setSelectedStyle(val); setCurrentPage(1); }} showSearch={true} />
-              <FilterDropdown label="Color" options={COLOR_OPTIONS} selected={selectedColor} onSelect={(val) => { setSelectedColor(val); setCurrentPage(1); }} showSearch={true} />
-              <FilterDropdown label="Size" options={SIZE_OPTIONS} selected={selectedSize} onSelect={(val) => { setSelectedSize(val); setCurrentPage(1); }} showSearch={true} />
               <FilterDropdown label="Stock status" options={STOCK_OPTIONS} selected={selectedStock} onSelect={(val) => { setSelectedStock(val); setCurrentPage(1); }} />
 
               {/* Created Date picker button */}
@@ -332,8 +303,6 @@ export function ProductTab({
                   style={{ top: '50%', left: '50%' }}
                 />
               </div>
-
-              <FilterDropdown label="Customer" options={CUSTOMER_OPTIONS} selected={selectedCustomer} onSelect={(val) => { setSelectedCustomer(val); setCurrentPage(1); }} showSearch={true} />
             </>
           )}
 
@@ -361,25 +330,6 @@ export function ProductTab({
 
         {/* Right aligned Operations & Tools */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {activeTab === 'Product' && (
-            <button
-              type="button"
-              onClick={() => triggerToast('Import feature is under design. Coming soon!', 'info')}
-              className="inline-flex items-center justify-center gap-1.5 px-4 h-10 border border-slate-200 bg-white rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 cursor-pointer btn-secondary-sheen"
-            >
-              <Upload className="h-4 w-4 text-slate-500" />
-              <span>Import</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-4.5 h-10 btn-primary-gradient rounded-lg text-sm font-semibold cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create</span>
-          </button>
         </div>
 
       </div>
@@ -393,17 +343,10 @@ export function ProductTab({
             <tr className="bg-[#F8F9FA] text-slate-500 border-b border-slate-100 text-[11.5px] font-semibold uppercase tracking-wider whitespace-nowrap">
               {activeTab === 'Product' && (
                 <>
-                  <th className="py-3 px-6 select-none font-sans">Name</th>
-                  <th className="py-3 px-6 font-sans">Image</th>
-                  <th className="py-3 px-6 font-sans">Product style / SKU</th>
-                  <th className="py-3 px-6 font-sans text-right">Incoming stock</th>
-                  <th className="py-3 px-6 font-sans">Stock qty</th>
-                  <th className="py-3 px-6 font-sans text-right">Item weight (oz)</th>
-                  <th className="py-3 px-6 font-sans text-right">Packaging weight (lbs)</th>
-                  <th className="py-3 px-6 font-sans">Customer</th>
-                  <th className="py-3 px-6 font-sans">Created date</th>
-                  <th className="py-3 px-6 font-sans">Last updated</th>
-                  <th className="py-3 px-6 font-sans">User</th>
+                  <th className="py-3 pl-8 pr-4 select-none font-sans w-[45%] text-left">Name</th>
+                  <th className="py-3 px-4 font-sans w-[25%] text-left">SKU</th>
+                  <th className="py-3 px-4 font-sans text-right w-[15%]">Incoming stock</th>
+                  <th className="py-3 pl-4 pr-10 font-sans text-right w-[15%]">Stock qty</th>
                 </>
               )}
               {activeTab === 'Type' && (
@@ -452,76 +395,36 @@ export function ProductTab({
                 paginatedProducts.map((product) => (
                   <tr
                     key={product.id}
-                    className={`hover:bg-slate-50/70 transition-colors duration-100 ${!product.active ? 'opacity-80 bg-slate-50/20' : ''}`}
+                    className="hover:bg-slate-50/70 transition-colors duration-100"
                   >
-                    <td className="py-4 px-6 font-sans whitespace-nowrap">
-                      <div className="flex items-center gap-4">
-                        <Toggle checked={product.active} onChange={() => handleToggleActive(product.id, product.active)} />
-                        <div className="flex items-center gap-2">
-                           <span className={`font-semibold text-slate-800 tracking-tight text-sm ${!product.active ? 'text-slate-500/80' : ''}`}>
-                            {product.name}
-                          </span>
-                          {product.user === 'editor123' && (
-                            <span className="text-[10px] text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 whitespace-nowrap">Flagged Item</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 font-sans whitespace-nowrap">
-                      <div
-                        className="relative h-12 w-12 rounded-xl border border-slate-200/80 bg-white p-1 flex items-center justify-center cursor-zoom-in transition shadow-xs hover:border-brand-400"
-                        onMouseEnter={(e) => {
-                          setHoveredProduct(product);
-                          setHoverRect(e.currentTarget.getBoundingClientRect());
-                        }}
-                        onMouseLeave={() => {
-                          setHoveredProduct(null);
-                          setHoverRect(null);
-                        }}
-                      >
-                        <img
-                          src={product.image || itemThumbImg}
-                          alt={product.name}
-                          className="h-full w-full object-contain rounded-lg"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 font-sans leading-relaxed whitespace-nowrap">
-                      <div className="flex flex-col max-w-[240px]">
-                        <span className={`font-medium truncate block transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`} title={product.sku.split('\n')[0]}>
-                          {product.sku.split('\n')[0]}
+                    <td className="py-4 pl-8 pr-4 font-sans whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-800 tracking-tight text-sm">
+                          {product.name}
                         </span>
-                        <span className="text-xs text-slate-400 font-mono tracking-wider mt-0.5 truncate block" title={product.sku.split('\n')[1]}>
-                          {product.sku.split('\n')[1]}
-                        </span>
+                        {product.user === 'editor123' && (
+                          <span className="text-[10px] text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 whitespace-nowrap">Flagged Item</span>
+                        )}
                       </div>
                     </td>
-                    <td className={`py-4 px-6 font-mono font-medium text-right whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>
+                    <td className="py-4 px-4 font-mono text-xs whitespace-nowrap text-slate-700">
+                      {product.sku.includes('\n') ? product.sku.split('\n')[1] : product.sku}
+                    </td>
+                    <td className="py-4 px-4 font-mono font-medium text-right whitespace-nowrap text-slate-700">
                       {product.incomingStock}
                     </td>
-                    <td className="py-4 px-6 font-sans whitespace-nowrap">
+                    <td className="py-4 pl-4 pr-10 font-sans text-right whitespace-nowrap">
                       {product.stockQty.toLowerCase().includes('out of stock') ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-100 whitespace-nowrap">Out of stock</span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 whitespace-nowrap">{product.stockQty}</span>
                       )}
                     </td>
-                    <td className={`py-4 px-6 font-mono font-medium text-right whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>
-                      {product.weight.toFixed(1)}
-                    </td>
-                    <td className={`py-4 px-6 font-mono font-medium text-right whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>
-                      {(product.packagingWeight ?? 1.2).toFixed(1)}
-                    </td>
-                    <td className={`py-4 px-6 font-sans font-medium whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>{product.customer}</td>
-                    <td className={`py-4 px-6 font-sans font-medium whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>{product.createdAt}</td>
-                    <td className={`py-4 px-6 font-sans font-medium whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>{product.lastUpdated}</td>
-                    <td className={`py-4 px-6 font-mono text-xs font-medium whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>{product.user}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-400 text-sm font-sans">
+                  <td colSpan={4} className="py-12 text-center text-slate-400 text-sm font-sans">
                     <div className="max-w-[280px] mx-auto flex flex-col items-center gap-2">
                       <AlertCircle className="h-8 w-8 text-slate-300" />
                       <span className="font-semibold text-slate-600">No matching products found</span>
