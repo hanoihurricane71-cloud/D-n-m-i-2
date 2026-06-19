@@ -234,9 +234,9 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
   {
     id: 'po1',
     poNumber: '1782623',
-    orderStatus: 'New',
+    orderStatus: 'Pending',
     totalQty: 22,
-    receivedQty: 22,
+    receivedQty: 0,
     incomingQty: 22,
     tracking: '92632623611132647',
     ageDays: 3,
@@ -246,15 +246,15 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     shippingCarrier: 'DHL Express',
     customer: 'Olivia Rhye',
     items: [
-      { productInfo: '102 / WHITE / S', sku: 'AJBT1B00M', qty: 2, receivedQty: 2, incomingQty: 2 },
-      { productInfo: '102 / BLACK / M', sku: 'AJBT1B00M', qty: 4, receivedQty: 4, incomingQty: 4 },
-      { productInfo: 'G500 / Red / L', sku: 'RD-G500-L', qty: 16, receivedQty: 16, incomingQty: 16 }
+      { productInfo: '102 / WHITE / S', sku: 'AJBT1B00M', qty: 2, receivedQty: 0, incomingQty: 2 },
+      { productInfo: '102 / BLACK / M', sku: 'AJBT1B00M', qty: 4, receivedQty: 0, incomingQty: 4 },
+      { productInfo: 'G500 / Red / L', sku: 'RD-G500-L', qty: 16, receivedQty: 0, incomingQty: 16 }
     ]
   },
   {
     id: 'po2',
     poNumber: '1782624',
-    orderStatus: 'Partial Received',
+    orderStatus: 'Pending',
     totalQty: 22,
     receivedQty: 10,
     incomingQty: 12,
@@ -276,7 +276,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     orderStatus: 'Received',
     totalQty: 22,
     receivedQty: 22,
-    incomingQty: 22,
+    incomingQty: 0,
     tracking: '92632623611132649',
     ageDays: 1,
     createdAt: 'Jan 3, 2024',
@@ -285,8 +285,8 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     shippingCarrier: 'USPS',
     customer: 'Hiep Tran Dinh',
     items: [
-      { productInfo: '102 / BLACK / 3XL', sku: 'AJBT1B00M', qty: 11, receivedQty: 11, incomingQty: 11 },
-      { productInfo: '102 / BLACK / 4XL', sku: 'AJBT1B00M', qty: 11, receivedQty: 11, incomingQty: 11 }
+      { productInfo: '102 / BLACK / 3XL', sku: 'AJBT1B00M', qty: 11, receivedQty: 11, incomingQty: 0 },
+      { productInfo: '102 / BLACK / 4XL', sku: 'AJBT1B00M', qty: 11, receivedQty: 11, incomingQty: 0 }
     ]
   },
   {
@@ -295,7 +295,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     orderStatus: 'Received',
     totalQty: 30,
     receivedQty: 30,
-    incomingQty: 30,
+    incomingQty: 0,
     tracking: '92632623611132650',
     ageDays: 3,
     createdAt: 'Jan 2, 2024',
@@ -304,14 +304,14 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     shippingCarrier: 'UPS',
     customer: 'John Doe',
     items: [
-      { productInfo: 'G500 / Dark blue / S', sku: 'DB-G500-S', qty: 15, receivedQty: 15, incomingQty: 15 },
-      { productInfo: 'G500 / Dark blue / M', sku: 'DB-G500-M', qty: 15, receivedQty: 15, incomingQty: 15 }
+      { productInfo: 'G500 / Dark blue / S', sku: 'DB-G500-S', qty: 15, receivedQty: 15, incomingQty: 0 },
+      { productInfo: 'G500 / Dark blue / M', sku: 'DB-G500-M', qty: 15, receivedQty: 15, incomingQty: 0 }
     ]
   },
   {
     id: 'po5',
     poNumber: '1782627',
-    orderStatus: 'New',
+    orderStatus: 'Pending',
     totalQty: 8,
     receivedQty: 0,
     incomingQty: 8,
@@ -332,7 +332,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     orderStatus: 'Received',
     totalQty: 10,
     receivedQty: 10,
-    incomingQty: 10,
+    incomingQty: 0,
     tracking: '92632623611132652',
     ageDays: 5,
     createdAt: 'Jan 1, 2024',
@@ -341,16 +341,16 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     shippingCarrier: 'FedEx',
     customer: 'Hiep Tran Dinh',
     items: [
-      { productInfo: 'G500 / Red / XL', sku: 'RD-G500-XL', qty: 10, receivedQty: 10, incomingQty: 10 }
+      { productInfo: 'G500 / Red / XL', sku: 'RD-G500-XL', qty: 10, receivedQty: 10, incomingQty: 0 }
     ]
   },
   {
     id: 'po7',
     poNumber: '1782629',
-    orderStatus: 'Cancelled',
+    orderStatus: 'Pending',
     totalQty: 15,
     receivedQty: 0,
-    incomingQty: 0,
+    incomingQty: 15,
     tracking: '92632623611132653',
     ageDays: 6,
     createdAt: 'Dec 29, 2023',
@@ -359,7 +359,7 @@ export const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
     shippingCarrier: 'UPS',
     customer: 'John Doe',
     items: [
-      { productInfo: '5000 / BLACK / 3XL', sku: 'BLK-5000-3XL', qty: 15, receivedQty: 0, incomingQty: 0 }
+      { productInfo: '5000 / BLACK / 3XL', sku: 'BLK-5000-3XL', qty: 15, receivedQty: 0, incomingQty: 15 }
     ]
   }
 ];
@@ -1216,8 +1216,8 @@ export const INITIAL_ORDERS: OrderManagementItem[] = [
     refNumber: 'REF-11902-S',
     orderDate: 'Jun 16, 2026',
     customerStore: 'Demi Wilkinson',
-    orderStatus: 'Canceled',
-    shippingStatus: 'Cancelled',
+    orderStatus: 'Prepared',
+    shippingStatus: 'Pre Transit',
     quantity: 15,
     shippingMethod: 'UPS Ground',
     destination: 'Store Boutique (Phoenix)',

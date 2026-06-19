@@ -118,7 +118,7 @@ export function PurchaseOrderTab({
           {/* Order Status Filter */}
           <FilterDropdown
             label="Order status"
-            options={['All Statuses', 'New', 'Partial Received', 'Received', 'Cancelled']}
+            options={['All Statuses', 'Pending', 'Received']}
             selected={selectedOrderStatus}
             onSelect={(val) => { setSelectedOrderStatus(val); setPoCurrentPage(1); }}
           />
@@ -206,22 +206,8 @@ export function PurchaseOrderTab({
               <th className="py-3 px-6 font-sans text-right">Received qty</th>
               <th className="py-3 px-6 font-sans text-right">Incoming qty</th>
               <th className="py-3 px-6 font-sans">Tracking</th>
-              <th
-                className="py-3 px-6 font-sans select-none cursor-pointer hover:bg-slate-100 transition-colors"
-                onClick={() => {
-                  const nextDir = poSortDirection === 'desc' ? 'asc' : 'desc';
-                  setPoSortDirection(nextDir);
-                  triggerToast(nextDir === 'desc' ? "Sorted oldest first" : "Sorted newest first", "info");
-                }}
-              >
-                <div className="flex items-center gap-1">
-                  <span>Age</span>
-                  <span className="text-xs text-slate-400 select-none">{poSortDirection === 'desc' ? '▼' : '▲'}</span>
-                </div>
-              </th>
               <th className="py-3 px-6 font-sans">Created at</th>
               <th className="py-3 px-6 font-sans">Created by</th>
-              <th className="sticky right-0 bg-[#F8F9FA] z-10 py-3 px-6 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]"></th>
             </tr>
           </thead>
 
@@ -239,17 +225,11 @@ export function PurchaseOrderTab({
                     </button>
                   </td>
                   <td className="py-3 px-6 font-sans">
-                    {po.orderStatus === 'New' && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 border border-rose-100 text-rose-600">New</span>
-                    )}
-                    {po.orderStatus === 'Partial Received' && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-100 text-blue-600">Partial Received</span>
+                    {po.orderStatus === 'Pending' && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 border border-amber-100 text-amber-600">Pending</span>
                     )}
                     {po.orderStatus === 'Received' && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600">Received</span>
-                    )}
-                    {po.orderStatus === 'Cancelled' && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-500">Cancelled</span>
                     )}
                   </td>
                   <td className="py-3 px-6 text-right font-mono font-medium text-slate-700">{po.totalQty}</td>
@@ -265,34 +245,20 @@ export function PurchaseOrderTab({
                         title="Copy tracking number"
                       >
                         {copiedPoId === po.id ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+                           <Check className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
                         ) : (
                           <Copy className="h-3.5 w-3.5" />
                         )}
                       </button>
                     </div>
                   </td>
-                  <td className="py-3 px-6 font-sans font-medium text-slate-700">{po.ageDays} days</td>
                   <td className="py-3 px-6 font-sans font-medium text-slate-700">{po.createdAt}</td>
                   <td className="py-3 px-6 font-mono text-xs font-medium text-slate-700">{po.createdBy}</td>
-                  <td className="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 py-2.5 px-6 shrink-0 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] text-center">
-                    {po.orderStatus !== 'Received' && po.orderStatus !== 'Cancelled' ? (
-                      <button
-                        type="button"
-                        onClick={() => onVerifyClick(po)}
-                        className="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded text-xs font-bold shadow-xs transition duration-150 cursor-pointer"
-                      >
-                        Verify
-                      </button>
-                    ) : (
-                      <span className="text-slate-400 text-xs font-medium italic select-none">Verified</span>
-                    )}
-                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={10} className="py-16 text-center text-slate-400">
+                <td colSpan={8} className="py-16 text-center text-slate-400">
                   <div className="max-w-[280px] mx-auto flex flex-col items-center gap-2">
                     <AlertCircle className="h-8 w-8 text-slate-300" />
                     <span className="font-semibold text-slate-600">No WROs found</span>

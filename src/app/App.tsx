@@ -55,7 +55,8 @@ import {
   Inbox,
   Store,
   Building,
-  Download
+  Download,
+  Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -223,6 +224,169 @@ const getTypeIcon = (typeName: string, iconName?: string) => {
   return <Tag className="h-4.5 w-4.5 text-slate-400" />;
 };
 
+const US_STATES = [
+  { code: 'AL', name: 'Alabama' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' },
+  { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' },
+  { code: 'DE', name: 'Delaware' },
+  { code: 'FL', name: 'Florida' },
+  { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' },
+  { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' },
+  { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' },
+  { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' },
+  { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' },
+  { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' },
+  { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' },
+  { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' },
+  { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' },
+  { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' },
+  { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' },
+  { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' },
+  { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' },
+  { code: 'WY', name: 'Wyoming' }
+];
+
+const parseUSAddress = (rawText: string) => {
+  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+
+  let parsed = {
+    name: '',
+    company: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'United States',
+    phone: '',
+    email: '',
+  };
+
+  if (lines.length > 0) parsed.name = lines[0];
+
+  let addressLines: string[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const l = lines[i];
+    const lower = l.toLowerCase();
+    if (lower.startsWith('phone:') || lower.startsWith('t:') || lower.startsWith('tel:')) {
+      parsed.phone = l.replace(/^(phone|t|tel):/i, '').trim();
+    } else if (lower.startsWith('email:') || lower.includes('@')) {
+      parsed.email = l.replace(/^email:/i, '').trim();
+    } else if (/\d{10,}/.test(l.replace(/[-() ]/g, '')) && !parsed.phone) {
+      parsed.phone = l.trim();
+    } else {
+      addressLines.push(l);
+    }
+  }
+
+  if (addressLines.length > 0) {
+    const lastLine = addressLines[addressLines.length - 1].toLowerCase();
+    if (lastLine === 'us' || lastLine === 'usa' || lastLine === 'united states' || lastLine === 'america') {
+      parsed.country = 'United States';
+      addressLines.pop();
+    }
+  }
+
+  if (addressLines.length > 0) {
+    const cityStateZipLine = addressLines[addressLines.length - 1];
+    const match = cityStateZipLine.match(/^([^,]+),\s*([A-Za-z\s]{2,})\s+(\d{5}(-\d{4})?|\d{5,9})$/);
+    if (match) {
+      parsed.city = match[1].trim();
+      parsed.state = match[2].trim();
+      parsed.zip = match[3].trim();
+      addressLines.pop();
+    } else {
+      const parts = cityStateZipLine.split(',');
+      if (parts.length >= 2) {
+        parsed.city = parts[0].trim();
+        const stateZipStr = parts[1].trim();
+        const zipMatch = stateZipStr.match(/\d{5}(-\d{4})?/);
+        if (zipMatch) {
+          parsed.zip = zipMatch[0];
+          parsed.state = stateZipStr.replace(zipMatch[0], '').trim();
+        } else {
+          parsed.state = stateZipStr;
+        }
+        addressLines.pop();
+      }
+    }
+  }
+
+  if (addressLines.length === 1) {
+    parsed.address1 = addressLines[0];
+  } else if (addressLines.length === 2) {
+    parsed.company = addressLines[0];
+    parsed.address1 = addressLines[1];
+  } else if (addressLines.length >= 3) {
+    parsed.company = addressLines[0];
+    parsed.address1 = addressLines[1];
+    parsed.address2 = addressLines[2];
+  }
+
+  return parsed;
+};
+
+const WAREHOUSE_PRESETS = [
+  {
+    name: 'Warehouse A',
+    company: 'SwiftPOD LLC - Warehouse A',
+    firstName: 'Hiep',
+    lastName: 'Admin',
+    email: 'warehouse-a@swiftpod.live',
+    phone: '408-555-0199',
+    country: 'United States',
+    address1: '2070 S 7th St. Ste E',
+    address2: '',
+    city: 'San Jose',
+    zip: '95112'
+  },
+  {
+    name: 'Warehouse B',
+    company: 'SwiftPOD LLC - Warehouse B',
+    firstName: 'Warehouse B',
+    lastName: 'Team',
+    email: 'warehouse-b@swiftpod.live',
+    phone: '201-555-0144',
+    country: 'United States',
+    address1: '1000 Logistics Blvd Suite 4',
+    address2: 'Dock 12A',
+    city: 'Keasbey',
+    zip: '08832'
+  }
+];
+
 export default function App() {
   // Master data states
   const [types, setTypes] = useState<TypeRowItem[]>(TYPE_ITEMS);
@@ -307,6 +471,46 @@ export default function App() {
   const [senderCity, setSenderCity] = useState('San Jose');
   const [senderZip, setSenderZip] = useState('95112');
   const [labelFormDestinationType, setLabelFormDestinationType] = useState<'Domestic' | 'International'>('Domestic');
+  const [selectedWarehouseForLabel, setSelectedWarehouseForLabel] = useState('Warehouse A');
+  const [warehousePresets, setWarehousePresets] = useState<Array<{
+    name: string;
+    company: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    country: string;
+    address1: string;
+    address2: string;
+    city: string;
+    zip: string;
+  }>>(() => {
+    const saved = localStorage.getItem('label_warehouse_presets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return WAREHOUSE_PRESETS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('label_warehouse_presets', JSON.stringify(warehousePresets));
+  }, [warehousePresets]);
+
+  const [isAddingNewWarehouse, setIsAddingNewWarehouse] = useState(false);
+  const [newWhName, setNewWhName] = useState('');
+  const [newWhCompany, setNewWhCompany] = useState('');
+  const [newWhFirstName, setNewWhFirstName] = useState('');
+  const [newWhLastName, setNewWhLastName] = useState('');
+  const [newWhEmail, setNewWhEmail] = useState('');
+  const [newWhPhone, setNewWhPhone] = useState('');
+  const [newWhCountry, setNewWhCountry] = useState('United States');
+  const [newWhAddress1, setNewWhAddress1] = useState('');
+  const [newWhAddress2, setNewWhAddress2] = useState('');
+  const [newWhCity, setNewWhCity] = useState('');
+  const [newWhZip, setNewWhZip] = useState('');
+
   const [isSenderEditing, setIsSenderEditing] = useState(false);
 
   // Active Navigation item
@@ -324,9 +528,7 @@ export default function App() {
       integration: 'SwiftPOD API',
       storeName: 'Olivia Rhye Store',
       storeCode: 'OLIVIA_RHYE_01',
-      storeAddress: '123 Fashion Blvd, Los Angeles, CA 90015',
       returnAddress: '456 Return Way, Carson, CA 90746',
-      billingAddress: '123 Fashion Blvd, Los Angeles, CA 90015',
       createdAt: '2026-05-12',
       createdBy: 'Olivia Rhye'
     },
@@ -336,9 +538,7 @@ export default function App() {
       integration: 'OrderDesk',
       storeName: 'Acme Corp Merch',
       storeCode: 'ACME_CORP_MERCH',
-      storeAddress: '100 Enterprise Way, Suite 400, Innovation District, NY 10001',
       returnAddress: '456 Return Way, Carson, CA 90746',
-      billingAddress: '100 Enterprise Way, Suite 400, Innovation District, NY 10001',
       createdAt: '2026-05-20',
       createdBy: 'Hiep Tran'
     },
@@ -348,9 +548,7 @@ export default function App() {
       integration: 'SwiftPOD API',
       storeName: 'Phoenix Baker Apparel',
       storeCode: 'PHOENIX_BAKER_AP',
-      storeAddress: '789 Desert Wind Trail, Phoenix, AZ 85001',
       returnAddress: '456 Return Way, Carson, CA 90746',
-      billingAddress: '',
       createdAt: '2026-06-01',
       createdBy: 'Sarah Lee'
     }
@@ -722,6 +920,9 @@ export default function App() {
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderManagementItem | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
   const [isLabelPopupOpen, setIsLabelPopupOpen] = useState(false);
+  const [isVoidConfirmOpen, setIsVoidConfirmOpen] = useState(false);
+  const [isShipmentItemsModalOpen, setIsShipmentItemsModalOpen] = useState(false);
+  const [isShipmentDetailsModalOpen, setIsShipmentDetailsModalOpen] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [orderRejectReasonText, setOrderRejectReasonText] = useState('');
   const [isRejectingOrder, setIsRejectingOrder] = useState(false);
@@ -776,24 +977,83 @@ export default function App() {
   const [shipName, setShipName] = useState('');
   const [shipCompanyLine, setShipCompanyLine] = useState('');
   const [shipAddressLine, setShipAddressLine] = useState('');
-  const [shipCityStateZip, setShipCityStateZip] = useState('');
+  const [shipAddress2, setShipAddress2] = useState('');
+  const [shipCity, setShipCity] = useState('');
+  const [shipState, setShipState] = useState('');
+  const [shipZip, setShipZip] = useState('');
+  const [shipCountry, setShipCountry] = useState('United States');
   const [shipPhone, setShipPhone] = useState('');
+  const [shipEmail, setShipEmail] = useState('');
+
+  const [isPasteAddressOpen, setIsPasteAddressOpen] = useState(false);
+  const [rawAddressToPaste, setRawAddressToPaste] = useState('');
 
   useEffect(() => {
     if (selectedOrderDetail) {
       const sAddr = selectedOrderDetail.shipAddress || {
         name: 'Auo Tivi',
         companyLine: '123',
-        addressLine: '3002 WOLF LAKE BLVD, NEW ALBANY,',
-        cityStateZip: 'Indiana, 80201, US',
-        phone: '9734508586'
+        addressLine: '3002 WOLF LAKE BLVD',
+        address2: '',
+        city: 'NEW ALBANY',
+        state: 'Indiana',
+        zip: '80201',
+        country: 'United States',
+        phone: '9734508586',
+        email: ''
       };
-      setShipName(sAddr.name);
-      setShipCompanyLine(sAddr.companyLine);
-      setShipAddressLine(sAddr.addressLine);
-      setShipCityStateZip(sAddr.cityStateZip);
-      setShipPhone(sAddr.phone);
+
+      setShipName(sAddr.name || '');
+      setShipCompanyLine(sAddr.companyLine || '');
+      
+      // Clean up legacy commas if any
+      const cleanedAddr1 = sAddr.addressLine ? sAddr.addressLine.replace(/,\s*$/, '') : '';
+      setShipAddressLine(cleanedAddr1);
+      setShipAddress2(sAddr.address2 || '');
+      
+      // Smart parsing of City, State, Zip, Country if nested fields are missing
+      if (sAddr.city) {
+        setShipCity(sAddr.city);
+        setShipState(sAddr.state || '');
+        setShipZip(sAddr.zip || '');
+        setShipCountry(sAddr.country || 'United States');
+      } else {
+        // Fallback parsers for old data formats
+        let cityVal = '';
+        let stateVal = '';
+        let zipVal = '';
+        let countryVal = 'United States';
+
+        if (cleanedAddr1.toUpperCase().includes('NEW ALBANY')) {
+          cityVal = 'NEW ALBANY';
+        }
+        
+        const locPart = (sAddr as any).cityStateZip || '';
+        if (locPart) {
+          const parts = locPart.split(',').map(p => p.trim());
+          if (parts[0] && parts[0].toLowerCase().includes('indiana')) {
+            stateVal = 'Indiana';
+          } else {
+            stateVal = parts[0] || '';
+          }
+          const zipMatch = locPart.match(/\b\d{5}\b/);
+          if (zipMatch) zipVal = zipMatch[0];
+          if (locPart.toUpperCase().includes('US') || locPart.toUpperCase().includes('USA') || locPart.toUpperCase().includes('UNITED STATES')) {
+            countryVal = 'United States';
+          }
+        }
+        
+        setShipCity(cityVal || 'NEW ALBANY');
+        setShipState(stateVal || 'Indiana');
+        setShipZip(zipVal || '80201');
+        setShipCountry(countryVal);
+      }
+
+      setShipPhone(sAddr.phone || '');
+      setShipEmail(sAddr.email || '');
       setIsEditingShipAddress(false);
+      setIsPasteAddressOpen(false);
+      setRawAddressToPaste('');
     }
   }, [selectedOrderDetail?.id]);
 
@@ -803,8 +1063,14 @@ export default function App() {
       name: shipName,
       companyLine: shipCompanyLine,
       addressLine: shipAddressLine,
-      cityStateZip: shipCityStateZip,
-      phone: shipPhone
+      address2: shipAddress2,
+      city: shipCity,
+      state: shipState,
+      zip: shipZip,
+      country: shipCountry,
+      cityStateZip: `${shipState ? shipState + ', ' : ''}${shipZip || ''}${shipCountry ? ', ' + shipCountry : ''}`,
+      phone: shipPhone,
+      email: shipEmail
     };
 
     const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -834,6 +1100,51 @@ export default function App() {
 
     setIsEditingShipAddress(false);
     triggerToast('Shipping address updated successfully!', 'success');
+  };
+
+  const handleVoidShipment = () => {
+    setIsVoidConfirmOpen(false);
+    if (!selectedOrderDetail) return;
+
+    const todayTimeStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newAct = {
+      id: `act_${Date.now()}`,
+      date: todayTimeStr,
+      action: `Voided Shipping Label / Refund requested for Tracking: "${selectedOrderDetail.shipmentInfo?.trackingNumber || ''}"`,
+      performedBy: 'Hiep Admin'
+    };
+
+    // Update in master orders array
+    setOrders(prev => prev.map(o => {
+      if (o.id === selectedOrderDetail.id) {
+        return {
+          ...o,
+          orderStatus: 'New' as const,
+          shippingStatus: undefined,
+          trackingNumber: undefined,
+          shipmentInfo: undefined,
+          shipments: [] as any[],
+          activityHistory: [newAct, ...(o.activityHistory || [])]
+        };
+      }
+      return o;
+    }));
+
+    // Update current detail state
+    setSelectedOrderDetail(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        orderStatus: 'New' as const,
+        shippingStatus: undefined,
+        trackingNumber: undefined,
+        shipmentInfo: undefined,
+        shipments: [] as any[],
+        activityHistory: [newAct, ...(prev.activityHistory || [])]
+      };
+    });
+
+    triggerToast('Shipping label voided & refund requested successfully!', 'success');
   };
   
   // Create Order modal state
@@ -1243,6 +1554,76 @@ export default function App() {
   const [isEditingWroNo, setIsEditingWroNo] = useState(false);
   const [tempWroNo, setTempWroNo] = useState('');
 
+  const [draftReceivedQtys, setDraftReceivedQtys] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (selectedPODetail) {
+      const initialQtys: Record<string, number> = {};
+      selectedPODetail.items?.forEach(item => {
+        initialQtys[item.sku] = item.receivedQty ?? 0;
+      });
+      setDraftReceivedQtys(initialQtys);
+    } else {
+      setDraftReceivedQtys({});
+    }
+  }, [selectedPODetail]);
+
+  const handleUpdateWRO = () => {
+    if (!selectedPODetail) return;
+
+    for (const item of selectedPODetail.items) {
+      const val = draftReceivedQtys[item.sku];
+      if (val === undefined || val < 0) {
+        triggerToast('Received quantity cannot be negative', 'info');
+        return;
+      }
+    }
+
+    const updatedItems = selectedPODetail.items.map(item => {
+      const rec = draftReceivedQtys[item.sku] ?? 0;
+      return {
+        ...item,
+        receivedQty: rec,
+        incomingQty: Math.max(0, item.qty - rec)
+      };
+    });
+
+    const computedTotalReceived = updatedItems.reduce((sum, item) => sum + item.receivedQty, 0);
+    const computedTotalIncoming = Math.max(0, selectedPODetail.totalQty - computedTotalReceived);
+    const nextStatus = computedTotalReceived >= selectedPODetail.totalQty ? 'Received' : 'Pending';
+
+    setPurchaseOrders(prev => prev.map(po => {
+      if (po.id === selectedPODetail.id) {
+        return {
+          ...po,
+          items: updatedItems,
+          receivedQty: computedTotalReceived,
+          incomingQty: computedTotalIncoming,
+          orderStatus: nextStatus
+        };
+      }
+      return po;
+    }));
+
+    setSelectedPODetail(prev => {
+      if (prev && prev.id === selectedPODetail.id) {
+        return {
+          ...prev,
+          items: updatedItems,
+          receivedQty: computedTotalReceived,
+          incomingQty: computedTotalIncoming,
+          orderStatus: nextStatus
+        };
+      }
+      return prev;
+    });
+
+    setSelectedPODetail(null);
+    setIsEditingWroNo(false);
+
+    triggerToast(`WRO ${selectedPODetail.poNumber} updated successfully!`, 'success');
+  };
+
   // WRO Verify and Comments States
   const [verifyingPO, setVerifyingPO] = useState<PurchaseOrder | null>(null);
   const [verifiedQtyInput, setVerifiedQtyInput] = useState<number>(0);
@@ -1263,14 +1644,7 @@ export default function App() {
     
     setPurchaseOrders(prev => prev.map(po => {
       if (po.id === verifyingPO.id) {
-        let nextStatus: PurchaseOrder['orderStatus'] = po.orderStatus;
-        if (qty >= po.totalQty) {
-          nextStatus = 'Received';
-        } else if (qty > 0) {
-          nextStatus = 'Partial Received';
-        } else {
-          nextStatus = 'New';
-        }
+        const nextStatus: PurchaseOrder['orderStatus'] = qty >= po.totalQty ? 'Received' : 'Pending';
         return {
           ...po,
           receivedQty: qty,
@@ -1284,14 +1658,7 @@ export default function App() {
     // Update selectedPODetail too if same ID is open
     setSelectedPODetail(prev => {
       if (prev && prev.id === verifyingPO.id) {
-        let nextStatus: PurchaseOrder['orderStatus'] = prev.orderStatus;
-        if (qty >= prev.totalQty) {
-          nextStatus = 'Received';
-        } else if (qty > 0) {
-          nextStatus = 'Partial Received';
-        } else {
-          nextStatus = 'New';
-        }
+        const nextStatus: PurchaseOrder['orderStatus'] = qty >= prev.totalQty ? 'Received' : 'Pending';
         return {
           ...prev,
           receivedQty: qty,
@@ -3477,7 +3844,6 @@ export default function App() {
                               <option value="New">New</option>
                               <option value="Prepared">Prepared</option>
                               <option value="Shipped">Shipped</option>
-                              <option value="Canceled">Canceled</option>
                             </select>
                             {pendingOrderStatus !== null && (
                               <div className="absolute left-0 right-0 top-full mt-2 z-[60] w-56 bg-white border border-slate-200 text-slate-800 rounded-xl shadow-xl p-3 text-left animate-in fade-in slide-in-from-top-2 duration-150">
@@ -3551,113 +3917,282 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* Ship Address */}
-                          <div className="p-4 space-y-2">
-                            <div className="flex items-center justify-between font-sans">
-                              <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Ship Address</h4>
-                              {!isEditingShipAddress ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const sAddr = selectedOrderDetail.shipAddress || {
-                                      name: 'Auo Tivi',
-                                      companyLine: '123',
-                                      addressLine: '3002 WOLF LAKE BLVD, NEW ALBANY,',
-                                      cityStateZip: 'Indiana, 80201, US',
-                                      phone: '9734508586'
-                                    };
-                                    setShipName(sAddr.name);
-                                    setShipCompanyLine(sAddr.companyLine);
-                                    setShipAddressLine(sAddr.addressLine);
-                                    setShipCityStateZip(sAddr.cityStateZip);
-                                    setShipPhone(sAddr.phone);
-                                    setIsEditingShipAddress(true);
-                                  }}
-                                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition cursor-pointer"
-                                >
-                                  Edit
-                                </button>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setIsEditingShipAddress(false)}
-                                    className="text-xs font-medium text-slate-500 hover:text-slate-700 transition cursor-pointer"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <span className="text-slate-300 text-xs">|</span>
-                                  <button
-                                    type="button"
-                                    onClick={handleSaveShipAddress}
-                                    className="text-xs font-bold text-brand-600 hover:text-brand-700 transition cursor-pointer"
-                                  >
-                                    Save
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                           {/* Ship Address */}
+                           <div className="p-4 space-y-2">
+                             <div className="flex items-center justify-between font-sans">
+                               <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Ship Address</h4>
+                               {!isEditingShipAddress ? (
+                                 <button
+                                   type="button"
+                                   onClick={() => {
+                                     const sAddr = selectedOrderDetail.shipAddress || {
+                                       name: 'Auo Tivi',
+                                       companyLine: '123',
+                                       addressLine: '3002 WOLF LAKE BLVD',
+                                       address2: '',
+                                       city: 'NEW ALBANY',
+                                       state: 'Indiana',
+                                       zip: '80201',
+                                       country: 'United States',
+                                       phone: '9734508586',
+                                       email: ''
+                                     };
+                                     setShipName(sAddr.name || '');
+                                     setShipCompanyLine(sAddr.companyLine || '');
+                                     setShipAddressLine(sAddr.addressLine ? sAddr.addressLine.replace(/,\s*$/, '') : '');
+                                     setShipAddress2(sAddr.address2 || '');
+                                     setShipCity(sAddr.city || 'NEW ALBANY');
+                                     setShipState(sAddr.state || 'Indiana');
+                                     setShipZip(sAddr.zip || '80201');
+                                     setShipCountry(sAddr.country || 'United States');
+                                     setShipPhone(sAddr.phone || '');
+                                     setShipEmail(sAddr.email || '');
+                                     setIsEditingShipAddress(true);
+                                   }}
+                                   className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition cursor-pointer"
+                                 >
+                                   Edit
+                                 </button>
+                               ) : (
+                                 <div className="flex items-center gap-2">
+                                   <button
+                                     type="button"
+                                     onClick={() => setIsEditingShipAddress(false)}
+                                     className="text-xs font-medium text-slate-500 hover:text-slate-700 transition cursor-pointer"
+                                   >
+                                     Cancel
+                                   </button>
+                                   <span className="text-slate-300 text-xs">|</span>
+                                   <button
+                                     type="button"
+                                     onClick={handleSaveShipAddress}
+                                     className="text-xs font-bold text-brand-600 hover:text-brand-700 transition cursor-pointer"
+                                   >
+                                     Save
+                                   </button>
+                                 </div>
+                               )}
+                             </div>
+ 
+                             {!isEditingShipAddress ? (
+                               <div className="text-xs text-slate-600 space-y-0.5 font-sans leading-relaxed">
+                                 <p className="font-bold text-slate-800 text-sm">
+                                   {selectedOrderDetail.shipAddress?.name || 'Auo Tivi'}
+                                 </p>
+                                 {selectedOrderDetail.shipAddress?.companyLine ? (
+                                   <p>{selectedOrderDetail.shipAddress.companyLine}</p>
+                                 ) : null}
+                                 <p>
+                                   {selectedOrderDetail.shipAddress?.addressLine || '3002 WOLF LAKE BLVD'}
+                                   {selectedOrderDetail.shipAddress?.address2 ? `, ${selectedOrderDetail.shipAddress.address2}` : ''}
+                                 </p>
+                                 <p>
+                                   {selectedOrderDetail.shipAddress?.city || 'NEW ALBANY'}
+                                   {selectedOrderDetail.shipAddress?.state ? `, ${selectedOrderDetail.shipAddress.state}` : ''}
+                                   {selectedOrderDetail.shipAddress?.zip ? ` ${selectedOrderDetail.shipAddress.zip}` : ''}
+                                   {selectedOrderDetail.shipAddress?.country ? `, ${selectedOrderDetail.shipAddress.country}` : ''}
+                                 </p>
+                                 <p>{selectedOrderDetail.shipAddress?.phone || '9734508586'}</p>
+                                 {selectedOrderDetail.shipAddress?.email ? (
+                                   <p>{selectedOrderDetail.shipAddress.email}</p>
+                                 ) : null}
+                               </div>
+                             ) : (
+                               <div className="space-y-4 pt-1 font-sans">
+                                 {isPasteAddressOpen ? (
+                                   <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 space-y-2">
+                                     <h5 className="text-xs font-bold text-blue-800">Paste Full US Address Block</h5>
+                                     <textarea
+                                       value={rawAddressToPaste}
+                                       onChange={(e) => setRawAddressToPaste(e.target.value)}
+                                       placeholder="Example:&#10;Auo Tivi&#10;123&#10;3002 WOLF LAKE BLVD&#10;NEW ALBANY, IN 80201&#10;United States&#10;Phone: 9734508586"
+                                       className="w-full h-24 p-2 bg-white border border-blue-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                     />
+                                     <div className="flex justify-end gap-2 text-[10px]">
+                                       <button
+                                         type="button"
+                                         onClick={() => setIsPasteAddressOpen(false)}
+                                         className="px-2 py-1 text-slate-500 hover:text-slate-700 bg-slate-100 rounded cursor-pointer"
+                                       >
+                                         Cancel
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           const parsed = parseUSAddress(rawAddressToPaste);
+                                           if (parsed) {
+                                             if (parsed.name) setShipName(parsed.name);
+                                             if (parsed.company) setShipCompanyLine(parsed.company);
+                                             if (parsed.address1) setShipAddressLine(parsed.address1);
+                                             if (parsed.address2) setShipAddress2(parsed.address2);
+                                             if (parsed.city) setShipCity(parsed.city);
+                                             if (parsed.state) setShipState(parsed.state);
+                                             if (parsed.zip) setShipZip(parsed.zip);
+                                             if (parsed.country) setShipCountry(parsed.country);
+                                             if (parsed.phone) setShipPhone(parsed.phone);
+                                             if (parsed.email) setShipEmail(parsed.email);
+                                             triggerToast('Address parsed successfully!', 'success');
+                                             setIsPasteAddressOpen(false);
+                                           } else {
+                                             triggerToast('Could not parse address text.', 'info');
+                                           }
+                                         }}
+                                         className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold cursor-pointer"
+                                       >
+                                         Apply
+                                       </button>
+                                     </div>
+                                   </div>
+                                 ) : (
+                                   <div className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded-md p-1.5 px-3">
+                                     <span className="text-[11px] text-slate-500">Need to copy-paste the whole address?</span>
+                                     <button
+                                       type="button"
+                                       onClick={() => setIsPasteAddressOpen(true)}
+                                       className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                                     >
+                                       Paste US Address
+                                     </button>
+                                   </div>
+                                 )}
 
-                            {!isEditingShipAddress ? (
-                              <div className="text-xs text-slate-600 space-y-0.5 font-sans leading-relaxed">
-                                <p className="font-bold text-slate-800 text-sm">
-                                  {selectedOrderDetail.shipAddress?.name || 'Auo Tivi'}
-                                </p>
-                                <p>{selectedOrderDetail.shipAddress?.companyLine || '123'}</p>
-                                <p>{selectedOrderDetail.shipAddress?.addressLine || '3002 WOLF LAKE BLVD, NEW ALBANY,'}</p>
-                                <p>{selectedOrderDetail.shipAddress?.cityStateZip || 'Indiana, 80201, US'}</p>
-                                <p>{selectedOrderDetail.shipAddress?.phone || '9734508586'}</p>
-                              </div>
-                            ) : (
-                              <div className="space-y-2 pt-1 font-sans">
-                                <div>
-                                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Name / Recipient</label>
-                                  <input
-                                    type="text"
-                                    value={shipName}
-                                    onChange={(e) => setShipName(e.target.value)}
-                                    className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-1 h-7 focus:outline-none focus:border-brand-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Company Address Detail</label>
-                                  <input
-                                    type="text"
-                                    value={shipCompanyLine}
-                                    onChange={(e) => setShipCompanyLine(e.target.value)}
-                                    className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-1 h-7 focus:outline-none focus:border-brand-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Street Address</label>
-                                  <input
-                                    type="text"
-                                    value={shipAddressLine}
-                                    onChange={(e) => setShipAddressLine(e.target.value)}
-                                    className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-1 h-7 focus:outline-none focus:border-brand-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">City, State, Zip, Country</label>
-                                  <input
-                                    type="text"
-                                    value={shipCityStateZip}
-                                    onChange={(e) => setShipCityStateZip(e.target.value)}
-                                    className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-1 h-7 focus:outline-none focus:border-brand-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Phone Number</label>
-                                  <input
-                                    type="text"
-                                    value={shipPhone}
-                                    onChange={(e) => setShipPhone(e.target.value)}
-                                    className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-1 h-7 focus:outline-none focus:border-brand-500"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                                 <div className="space-y-3">
+                                   {/* Name Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">Name <span className="text-red-500">*</span></label>
+                                     <input
+                                       type="text"
+                                       value={shipName}
+                                       onChange={(e) => setShipName(e.target.value)}
+                                       className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                       placeholder="Name"
+                                     />
+                                   </div>
+
+                                   {/* Company Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">Company</label>
+                                     <input
+                                       type="text"
+                                       value={shipCompanyLine}
+                                       onChange={(e) => setShipCompanyLine(e.target.value)}
+                                       className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                       placeholder="Company Name"
+                                     />
+                                   </div>
+
+                                   {/* Country Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">Country <span className="text-red-500">*</span></label>
+                                     <input
+                                       type="text"
+                                       value={shipCountry}
+                                       onChange={(e) => setShipCountry(e.target.value)}
+                                       className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                       placeholder="Country"
+                                     />
+                                   </div>
+
+                                   {/* Address Row */}
+                                   <div className="flex items-start gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0 mt-1.5 animate-pulse-none">Address <span className="text-red-500">*</span></label>
+                                     <div className="flex-1 space-y-1.5 animate-pulse-none">
+                                       <input
+                                         type="text"
+                                         value={shipAddressLine}
+                                         onChange={(e) => setShipAddressLine(e.target.value)}
+                                         className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                         placeholder="Street Address"
+                                       />
+                                       <input
+                                         type="text"
+                                         value={shipAddress2}
+                                         onChange={(e) => setShipAddress2(e.target.value)}
+                                         className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                         placeholder="Address2"
+                                       />
+                                     </div>
+                                   </div>
+
+                                   {/* City Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">City <span className="text-red-500">*</span></label>
+                                     <input
+                                       type="text"
+                                       value={shipCity}
+                                       onChange={(e) => setShipCity(e.target.value)}
+                                       className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                       placeholder="City"
+                                     />
+                                   </div>
+
+                                   {/* State & Zip Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">State</label>
+                                     <div className="flex-1 flex gap-2">
+                                       <select
+                                         value={shipState}
+                                         onChange={(e) => setShipState(e.target.value)}
+                                         className="w-1/2 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-1.5 py-1 h-8 focus:outline-none focus:border-blue-500 cursor-pointer"
+                                       >
+                                         <option value="">Select state</option>
+                                         {US_STATES.map((stateOption) => (
+                                           <option key={stateOption.code} value={stateOption.name}>
+                                             {stateOption.name}
+                                           </option>
+                                         ))}
+                                       </select>
+                                       
+                                       <div className="w-1/2 flex items-center gap-1.5">
+                                         <label className="text-[11px] font-semibold text-slate-705 shrink-0">Zip code <span className="text-red-500">*</span></label>
+                                         <input
+                                           type="text"
+                                           value={shipZip}
+                                           onChange={(e) => setShipZip(e.target.value)}
+                                           className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2 py-1 h-8 focus:outline-none focus:border-blue-500 text-center"
+                                           placeholder="ZIP"
+                                         />
+                                       </div>
+                                     </div>
+                                   </div>
+
+                                   {/* Phone Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">Phone</label>
+                                     <input
+                                       type="text"
+                                       value={shipPhone}
+                                       onChange={(e) => setShipPhone(e.target.value)}
+                                       className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                       placeholder="Phone Number"
+                                     />
+                                   </div>
+
+                                   {/* Email Row */}
+                                   <div className="flex items-center gap-3">
+                                     <label className="w-16 text-[11px] font-semibold text-slate-705 shrink-0">Email</label>
+                                     <input
+                                       type="text"
+                                       value={shipEmail}
+                                       onChange={(e) => setShipEmail(e.target.value)}
+                                       className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8"
+                                       placeholder="Email"
+                                     />
+                                   </div>
+                                 </div>
+
+                                 <div className="flex justify-end pt-1">
+                                   <button
+                                     type="button"
+                                     onClick={handleSaveShipAddress}
+                                     className="px-4 py-1.5 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded text-xs cursor-pointer transition focus:outline-none shadow-xs uppercase tracking-wider text-[10px]"
+                                   >
+                                     Save
+                                   </button>
+                                 </div>
+                               </div>
+                             )}
+                           </div>
                         </div>
                       </div>
                     </div>
@@ -3708,59 +4243,48 @@ export default function App() {
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest shrink-0">Timeline & Notes</h4>
 
                       {/* Unified Notes Input */}
-                      <div className="shrink-0 w-full">
+                      <div className="shrink-0 w-full animate-in fade-in duration-200">
                         <textarea
                           value={orderCommentText}
                           onChange={(e) => setOrderCommentText(e.target.value)}
-                          placeholder="Comment..."
+                          placeholder="Comment & press Enter to save..."
                           rows={2}
                           className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
-                              const triggerCommentBtn = document.getElementById('add-comment-btn');
-                              if (triggerCommentBtn) triggerCommentBtn.click();
+                              const trimmedVal = orderCommentText.trim();
+                              if (!trimmedVal) return;
+                              const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                              const newAct = {
+                                id: `act_${Date.now()}`,
+                                date: nowStr,
+                                action: `Internal note: "${trimmedVal}"`,
+                                performedBy: 'Hiep Admin'
+                              };
+
+                              setOrders(prev => prev.map(o => {
+                                if (o.id === selectedOrderDetail.id) {
+                                    return {
+                                      ...o,
+                                      internalNotes: trimmedVal,
+                                      activityHistory: [newAct, ...(o.activityHistory || [])]
+                                    };
+                                }
+                                return o;
+                              }));
+
+                              setSelectedOrderDetail(prev => prev ? {
+                                ...prev,
+                                internalNotes: trimmedVal,
+                                activityHistory: [newAct, ...(prev.activityHistory || [])]
+                              } : null);
+
+                              setOrderCommentText('');
+                              triggerToast('Internal note saved!', 'success');
                             }
                           }}
                         />
-                        <button
-                          id="add-comment-btn"
-                          type="button"
-                          onClick={() => {
-                            if (!orderCommentText.trim()) return;
-                            const val = orderCommentText.trim();
-                            const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                            const newAct = {
-                              id: `act_${Date.now()}`,
-                              date: nowStr,
-                              action: `Internal note: "${val}"`,
-                              performedBy: 'Hiep Admin'
-                            };
-
-                            setOrders(prev => prev.map(o => {
-                              if (o.id === selectedOrderDetail.id) {
-                                  return {
-                                    ...o,
-                                    internalNotes: val,
-                                    activityHistory: [newAct, ...(o.activityHistory || [])]
-                                  };
-                              }
-                              return o;
-                            }));
-
-                            setSelectedOrderDetail(prev => prev ? {
-                              ...prev,
-                              internalNotes: val,
-                              activityHistory: [newAct, ...(prev.activityHistory || [])]
-                            } : null);
-
-                            setOrderCommentText('');
-                            triggerToast('Internal note saved!', 'success');
-                          }}
-                          className="mt-1.5 w-full h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer"
-                        >
-                          Save
-                        </button>
                       </div>
 
                       <div className="overflow-y-auto max-h-[140px] scrollbar-thin pl-0 pr-1 flex-1">
@@ -3805,51 +4329,186 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Shipment Information section */}
+                     {/* Shipment Information section (High-Fidelity Shipping Label with Barcode, and Void button with custom popup) */}
                     {selectedOrderDetail.shipmentInfo ? (
-                      <div className="space-y-3 mt-4">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest pl-1">Shipment Information</h4>
-                        <div className="border border-slate-200/60 rounded-xl p-4 bg-white shadow-xs space-y-3 font-sans text-xs">
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                            <div>
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Carrier</span>
-                              <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
-                                {selectedOrderDetail.shipmentInfo.carrier}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Service Level</span>
-                              <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
-                                {selectedOrderDetail.shipmentInfo.service}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ship Date</span>
-                              <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
-                                {selectedOrderDetail.shipmentInfo.shipDate}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tracking Number</span>
-                              <span className="text-xs font-mono font-semibold text-brand-700 mt-0.5 block select-all">
-                                {selectedOrderDetail.shipmentInfo.trackingNumber}
-                              </span>
+                      <div className="space-y-4 mt-4 text-left font-sans flex flex-col items-stretch w-full">
+                        
+                        {/* Premium Royal Solid Shipment Status Card - High Legibility (Deep Blue Gradient) */}
+                        <div className="w-full bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 rounded-2xl shadow-lg border border-indigo-500/35 p-5 text-white overflow-hidden animate-in fade-in duration-300">
+                          {/* Card Header */}
+                          <div className="flex items-center justify-between pb-3 border-b border-white/10 select-none">
+                            <span className="font-extrabold text-white tracking-tight text-xs md:text-sm">Shipment 1 - #8243790</span>
+                            <div className="flex items-center gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => setIsShipmentDetailsModalOpen(true)}
+                                className="text-xs font-bold text-indigo-150 hover:text-white transition duration-150 uppercase tracking-widest cursor-pointer hover:underline underline-offset-2 flex items-center gap-1"
+                                title="Click to view all selected shipping label details"
+                              >
+                                <Eye className="h-3 w-3 inline-block" />
+                                <span>Details</span>
+                              </button>
+                              <span className="text-white/20 select-none">|</span>
+                              <button
+                                type="button"
+                                onClick={() => setIsVoidConfirmOpen(true)}
+                                className="text-xs font-bold text-rose-300 hover:text-rose-200 transition duration-150 uppercase tracking-widest cursor-pointer hover:underline underline-offset-2"
+                              >
+                                Void
+                              </button>
                             </div>
                           </div>
 
-                          <div className="border-t border-slate-100 pt-2 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedShipmentForView(selectedOrderDetail.shipmentInfo);
-                                setIsShipmentViewModalOpen(true);
-                              }}
-                              className="text-[11px] font-bold text-brand-600 hover:text-brand-700 cursor-pointer flex items-center gap-1"
-                            >
-                              <span>View Shipment Details</span>
-                              <span>→</span>
-                            </button>
+                          {/* Info Fields Grid */}
+                          <div className="grid grid-cols-[85px_1fr] gap-y-2.5 text-xs font-sans mt-3.5 leading-relaxed">
+                            <div className="text-blue-100/70 font-semibold uppercase tracking-wider text-[10px]">Tracking:</div>
+                            <div className="text-white font-mono font-bold select-all tracking-wide text-xs">{selectedOrderDetail.shipmentInfo.trackingNumber || '1LSDBVU000ZLLNI'}</div>
+
+                            <div className="text-blue-100/70 font-semibold uppercase tracking-wider text-[10px]">Status:</div>
+                            <div>
+                              <span className="inline-flex items-center gap-1.5 text-yellow-300 font-extrabold tracking-wide text-xs">
+                                <span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                                Unknown
+                              </span>
+                            </div>
+
+                            <div className="text-blue-100/70 font-semibold uppercase tracking-wider text-[10px]">Service:</div>
+                            <div className="text-white font-extrabold uppercase select-none tracking-tight">{selectedOrderDetail.shipmentInfo.service || selectedOrderDetail.shipmentInfo.shippingMethod || 'GRND'}</div>
+
+                            <div className="text-blue-100/70 font-semibold uppercase tracking-wider text-[10px]">D/W:</div>
+                            <div className="text-white font-semibold font-mono">{selectedOrderDetail.shipmentInfo.size ? `(${selectedOrderDetail.shipmentInfo.size})` : '(12.00x3.00x15.00) in'} / {selectedOrderDetail.shipmentInfo.weight || '47.72 oz'}</div>
+
+                            <div className="text-blue-100/70 font-semibold uppercase tracking-wider text-[10px]">Price:</div>
+                            <div className="text-white font-black text-sm tracking-tight">{selectedOrderDetail.shipmentInfo.price || '$7.21'}</div>
                           </div>
+
+                          {/* Number of Items: Horizontal row separated at the bottom (clickable to open items detail modal) */}
+                          <div 
+                            onClick={() => setIsShipmentItemsModalOpen(true)}
+                            className="border-t border-white/10 pt-3.5 mt-3.5 flex items-center justify-between cursor-pointer hover:bg-white/10 p-1.5 -mx-1.5 rounded-lg transition duration-150 group"
+                            title="Click to view items list"
+                          >
+                            <span className="text-[10px] font-semibold text-blue-100/70 uppercase tracking-widest group-hover:text-white transition">Number of items</span>
+                            <span className="text-sm font-black font-mono bg-white/15 px-2.5 py-0.5 rounded text-center text-white group-hover:bg-white/25 transition">
+                              {selectedOrderDetail.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || selectedOrderDetail.quantity}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Print only action below status card, physical sticker image has been completely removed to make it fit beautifully */}
+                        <div className="w-full">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const printWindow = window.open('', '_blank');
+                              if (printWindow) {
+                                printWindow.document.write(`
+                                  <html>
+                                    <head>
+                                      <title>Print Shipping Label *(1Z) ${selectedOrderDetail.shipmentInfo?.trackingNumber || '1LSDBVU000ZLLNI'}*</title>
+                                      <style>
+                                        body {
+                                          margin: 0;
+                                          display: flex;
+                                          justify-content: center;
+                                          align-items: center;
+                                          height: 100vh;
+                                          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                                          background-color: #f1f5f9;
+                                        }
+                                        .label-card {
+                                          width: 4in;
+                                          height: 6in;
+                                          border: 3px solid #000;
+                                          padding: 20px;
+                                          box-sizing: border-box;
+                                          display: flex;
+                                          flex-direction: column;
+                                          justify-content: space-between;
+                                          background-color: #fff;
+                                        }
+                                        .header {
+                                          font-size: 22px;
+                                          font-weight: 900;
+                                          border-bottom: 5px solid #000;
+                                          padding-bottom: 6px;
+                                          text-transform: uppercase;
+                                          letter-spacing: -1px;
+                                        }
+                                        .section {
+                                          border-top: 1.5px solid #000;
+                                          padding-top: 6px;
+                                          font-size: 11px;
+                                          line-height: 1.35;
+                                        }
+                                        .section-title {
+                                          font-weight: 905;
+                                          font-size: 9px;
+                                          text-transform: uppercase;
+                                          letter-spacing: 0.5px;
+                                          display: block;
+                                          margin-bottom: 2px;
+                                        }
+                                        .barcode {
+                                          margin-top: 15px;
+                                          text-align: center;
+                                        }
+                                        .barcode-lines {
+                                          height: 65px;
+                                          background-color: #000;
+                                          background-image: repeating-linear-gradient(90deg, #fff, #fff 1.5px, #000 1.5px, #000 5.5px);
+                                          margin: 6px 0;
+                                        }
+                                        .barcode-text {
+                                          font-family: monospace;
+                                          font-size: 11px;
+                                          font-weight: bold;
+                                          letter-spacing: 1px;
+                                        }
+                                      </style>
+                                    </head>
+                                    <body>
+                                      <div class="label-card">
+                                        <div class="header">
+                                          ${selectedOrderDetail.shipmentInfo?.carrier || 'UPS'} GROUND
+                                        </div>
+                                        <div class="section">
+                                          <span class="section-title">SHIP FROM:</span>
+                                          <strong>${selectedOrderDetail.shipmentInfo?.senderDetails?.name || 'SwiftPOD LLC'}</strong><br/>
+                                          ${selectedOrderDetail.shipmentInfo?.senderDetails?.company || 'Main Depot Terminal'}<br/>
+                                          ${selectedOrderDetail.shipmentInfo?.senderDetails?.address || '2070 S 7th St. Ste E, San Jose, CA 95112'}
+                                        </div>
+                                        <div class="section">
+                                          <span class="section-title">SHIP TO:</span>
+                                          <strong>${selectedOrderDetail.shipmentInfo?.recipientDetails?.firstName || selectedOrderDetail.shipAddress?.name || 'Auo Tivi'} ${selectedOrderDetail.shipmentInfo?.recipientDetails?.lastName || ''}</strong><br/>
+                                          ${selectedOrderDetail.shipmentInfo?.recipientDetails?.company || selectedOrderDetail.shipAddress?.companyLine || ''}<br/>
+                                          ${selectedOrderDetail.shipmentInfo?.recipientDetails?.address1 || selectedOrderDetail.shipAddress?.addressLine || ''}<br/>
+                                          ${(selectedOrderDetail.shipmentInfo?.recipientDetails?.city || selectedOrderDetail.shipAddress?.city || '').toUpperCase()}, ${selectedOrderDetail.shipmentInfo?.recipientDetails?.zip || selectedOrderDetail.shipAddress?.zip || ''}
+                                        </div>
+                                        <div class="barcode">
+                                          <div class="barcode-lines"></div>
+                                          <div class="barcode-text">*(1Z) ${selectedOrderDetail.shipmentInfo?.trackingNumber || '1LSDBVU000ZLLNI'}*</div>
+                                        </div>
+                                      </div>
+                                      <script>
+                                        window.onload = function() {
+                                          window.print();
+                                          setTimeout(function() { window.close(); }, 1500);
+                                        };
+                                      </script>
+                                    </body>
+                                  </html>
+                                `);
+                                printWindow.document.close();
+                              } else {
+                                triggerToast('Popup blocked! Please allow popups to launch print jobs.', 'info');
+                              }
+                            }}
+                            className="w-full py-2 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold cursor-pointer transition duration-150 text-center font-sans tracking-wide shadow-xs flex items-center justify-center gap-1.5 h-9"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            <span>Print Label</span>
+                          </button>
                         </div>
                       </div>
                     ) : null}
@@ -3869,6 +4528,19 @@ export default function App() {
                             setLabelFormEmail(`${selectedOrderDetail.customerStore?.toLowerCase().replace(/\s+/g, '') || 'customer'}@example.com`);
                             setLabelFormPhone('555-019-2834');
                             
+                            // Initialize sender details to Warehouse A
+                            setSelectedWarehouseForLabel('Warehouse A');
+                            setSenderFirstName('Hiep');
+                            setSenderLastName('Admin');
+                            setSenderCompany('SwiftPOD LLC - Warehouse A');
+                            setSenderEmail('warehouse-a@swiftpod.live');
+                            setSenderPhone('408-555-0199');
+                            setSenderCountry('United States');
+                            setSenderAddress1('2070 S 7th St. Ste E');
+                            setSenderAddress2('');
+                            setSenderCity('San Jose');
+                            setSenderZip('95112');
+
                             const isIntl = selectedOrderDetail.destinationType === 'International' || selectedOrderDetail.destination?.toLowerCase().includes('tokyo');
                             setLabelFormCountry(isIntl ? 'Japan' : 'United States');
                             setLabelFormAddress1(selectedOrderDetail.destination || '2070 S 7th St. Ste E');
@@ -3877,9 +4549,9 @@ export default function App() {
                             setLabelFormZip(isIntl ? '100-0001' : '95112');
                             
                             // Initialize package
-                            setLabelFormGetRateClicked(false);
+                            setLabelFormGetRateClicked(true);
                             setLabelFormLoadingRates(false);
-                            setLabelFormSelectedRateIndex(-1);
+                            setLabelFormSelectedRateIndex(0);
                             setLabelFormCarrierPackage('Package');
                             setLabelFormPackages([{
                               index: 1,
@@ -3938,6 +4610,67 @@ export default function App() {
         sizes={sizes}
         onCreate={(data) => handleCreate(activeTab, data)} 
       />
+
+      {/* CUSTOM CONFIRM REFUND / VOID SHIPMENT MODAL */}
+      <AnimatePresence>
+        {isVoidConfirmOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsVoidConfirmOpen(false)}
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-150 z-[101] font-sans flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <span className="text-[13px] font-bold text-slate-805 select-none tracking-tight">Confirm Refund</span>
+                <button
+                  type="button"
+                  onClick={() => setIsVoidConfirmOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 select-none text-left">
+                <p className="text-[11.5px] text-slate-705 leading-normal font-medium">
+                  Do you want to refund order?
+                </p>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-50 bg-slate-50/50 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setIsVoidConfirmOpen(false)}
+                  className="px-4 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-md transition cursor-pointer flex items-center justify-center font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleVoidShipment}
+                  className="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition cursor-pointer flex items-center justify-center font-semibold shadow-xs"
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* CUSTOM DELETE CONFIRMATION MODAL */}
       <AnimatePresence>
@@ -4060,219 +4793,148 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Two Column Layout container */}
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 max-h-[70vh] overflow-y-auto">
-                
-                {/* Left Column (2/3 width) - Details & Table info */}
-                <div className="col-span-2 p-5 space-y-4">
-                  {/* Information cards group */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                      <span className="block text-xs font-medium text-slate-400">Total quantity</span>
-                      <span className="text-sm font-semibold text-slate-800 block mt-1.5 font-mono font-bold">
-                        {selectedPODetail.items ? selectedPODetail.items.reduce((sum, item) => sum + item.qty, 0) : 0} items
-                      </span>
-                    </div>
-                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                      <span className="block text-xs font-medium text-slate-400">Shipping carrier</span>
-                      <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.shippingCarrier}</span>
-                    </div>
-                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                      <span className="block text-xs font-medium text-slate-400">Status</span>
-                      <div className="mt-1.5">
-                        {selectedPODetail.orderStatus === 'New' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 border border-rose-100 text-rose-600">
-                            New
-                          </span>
-                        )}
-                        {selectedPODetail.orderStatus === 'Partial Received' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-100 text-blue-600">
-                            Partial Received
-                          </span>
-                        )}
-                        {selectedPODetail.orderStatus === 'Received' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600">
-                            Received
-                          </span>
-                        )}
-                        {selectedPODetail.orderStatus === 'Cancelled' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-500">
-                            Cancelled
-                          </span>
-                        )}
-                      </div>
-                    </div>
+              {/* Single Column Layout container */}
+              <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+                {/* Information cards group */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                    <span className="block text-xs font-medium text-slate-400">Customer</span>
+                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.customer || 'No customer'}</span>
                   </div>
-
-                  {/* Tracking input visual detail */}
-                  <div className="p-3 bg-slate-50/30 border border-slate-100 rounded-lg flex items-center justify-between text-xs font-sans">
-                    <div className="flex items-center gap-1.5 text-slate-500">
-                      <span className="text-xs font-medium text-slate-400">Tracking:</span>
-                      <span className="font-mono text-xs font-semibold text-slate-755 select-all ml-1">{selectedPODetail.tracking}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyTracking(selectedPODetail.id, selectedPODetail.tracking)}
-                      className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 border rounded-md transition cursor-pointer font-medium ${
-                        copiedPoId === selectedPODetail.id
-                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
-                      }`}
-                    >
-                      {copiedPoId === selectedPODetail.id ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Items detail list inside this PO */}
-                  <div className="space-y-2">
-                    <span className="block text-xs font-semibold text-slate-500">
-                      Items list
+                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                    <span className="block text-xs font-medium text-slate-400">Total quantity</span>
+                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 font-mono font-bold">
+                      {selectedPODetail.items ? selectedPODetail.items.reduce((sum, item) => sum + item.qty, 0) : 0} items
                     </span>
-                    
-                    <div className="border border-slate-100 rounded-lg overflow-hidden bg-white max-h-[220px] overflow-y-auto shadow-xs">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50 text-slate-550 border-b border-slate-100 font-semibold text-[11px] uppercase tracking-wide select-none">
-                            <th className="py-2.5 px-4 font-semibold uppercase">Product info</th>
-                            <th className="py-2.5 px-4 font-semibold uppercase">SKU</th>
-                            <th className="py-2.5 px-4 font-semibold uppercase text-right">Qty</th>
-                            <th className="py-2.5 px-4 font-semibold uppercase text-right">Received Qty</th>
-                            <th className="py-2.5 px-4 font-semibold uppercase text-right">Incoming Qty</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
-                          {selectedPODetail.items && selectedPODetail.items.length > 0 ? (
-                            selectedPODetail.items.map((item, id) => (
+                  </div>
+                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                    <span className="block text-xs font-medium text-slate-400">Shipping carrier</span>
+                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.shippingCarrier}</span>
+                  </div>
+                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                    <span className="block text-xs font-medium text-slate-400">Status</span>
+                    <div className="mt-1.5">
+                      {selectedPODetail.orderStatus === 'Pending' && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 border border-amber-100 text-amber-600 animate-in fade-in zoom-in duration-200">
+                          Pending
+                        </span>
+                      )}
+                      {selectedPODetail.orderStatus === 'Received' && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600 animate-in fade-in zoom-in duration-200">
+                          Received
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tracking input visual detail */}
+                <div className="p-3 bg-slate-50/30 border border-slate-100 rounded-lg flex items-center justify-between text-xs font-sans animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <span className="text-xs font-medium text-slate-400">Tracking:</span>
+                    <span className="font-mono text-xs font-semibold text-slate-755 select-all ml-1">{selectedPODetail.tracking}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyTracking(selectedPODetail.id, selectedPODetail.tracking)}
+                    className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 border rounded-md transition cursor-pointer font-medium ${
+                      copiedPoId === selectedPODetail.id
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                    }`}
+                  >
+                    {copiedPoId === selectedPODetail.id ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Items detail list inside this PO */}
+                <div className="space-y-2 animate-in duration-200">
+                  <span className="block text-xs font-semibold text-slate-500">
+                    Items list
+                  </span>
+                  
+                  <div className="border border-slate-100 rounded-lg overflow-hidden bg-white max-h-[300px] overflow-y-auto shadow-xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-550 border-b border-slate-100 font-semibold text-[11px] uppercase tracking-wide select-none">
+                          <th className="py-2.5 px-4 font-semibold uppercase">Product info</th>
+                          <th className="py-2.5 px-4 font-semibold uppercase">SKU</th>
+                          <th className="py-2.5 px-4 font-semibold uppercase text-right">Total Qty</th>
+                          <th className="py-2.5 px-4 font-semibold uppercase text-right">Received Qty</th>
+                          <th className="py-2.5 px-4 font-semibold uppercase text-right">Incoming Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {selectedPODetail.items && selectedPODetail.items.length > 0 ? (
+                          selectedPODetail.items.map((item, id) => {
+                            const totalQtyFieldValue = item.qty;
+                            const currentRecQty = draftReceivedQtys[item.sku] ?? 0;
+                            const currentIncomingQty = Math.max(0, totalQtyFieldValue - currentRecQty);
+                            return (
                               <tr key={id} className="hover:bg-slate-50/50">
                                 <td className="py-2.5 px-4 font-bold text-slate-800">{item.productInfo}</td>
                                 <td className="py-2.5 px-4 text-slate-700 font-mono text-[11px] font-medium">{item.sku}</td>
-                                <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{item.qty}</td>
-                                <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{selectedPODetail.receivedQty ?? item.qty}</td>
-                                <td className="py-2.5 px-4 text-right font-medium text-slate-700 font-mono">{selectedPODetail.incomingQty ?? item.qty}</td>
+                                <td className="py-2.5 px-4 text-right font-medium text-slate-705 font-mono">{totalQtyFieldValue}</td>
+                                <td className="py-1 px-4 text-right">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={currentRecQty}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value);
+                                      const safeVal = isNaN(val) ? 0 : Math.max(0, val);
+                                      setDraftReceivedQtys(prev => ({
+                                        ...prev,
+                                        [item.sku]: safeVal
+                                      }));
+                                    }}
+                                    className="w-20 px-2 py-1 text-right border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-xs text-slate-800 bg-white shadow-xs"
+                                  />
+                                </td>
+                                <td className="py-2.5 px-4 text-right font-medium text-slate-705 font-mono">{currentIncomingQty}</td>
                               </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={5} className="py-6 text-center text-slate-400">
-                                No item details attached.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column (1/3 width) - Timeline Comments & Verify action */}
-                <div className="col-span-1 p-5 flex flex-col space-y-4 max-h-full min-h-0 text-left">
-                  {/* Verify Action Panel */}
-                  {selectedPODetail.orderStatus !== 'Received' && selectedPODetail.orderStatus !== 'Cancelled' ? (
-                    <div className="bg-amber-50/60 rounded-xl p-3.5 border border-amber-200/80 font-sans space-y-2.5 select-none">
-                      <span className="block font-bold text-amber-900 text-xs uppercase tracking-wider">Verify receiving</span>
-                      <button
-                        type="button"
-                        onClick={() => handleInitVerify(selectedPODetail)}
-                        className="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1 min-h-[34px]"
-                      >
-                        Verify Received Qty
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-slate-400 font-medium italic text-center select-none">
-                      This WRO has already been verified and received.
-                    </div>
-                  )}
-
-                  {/* Unified Comment Area Box */}
-                  <div className="border border-slate-200 rounded-xl bg-slate-50/50 p-4 space-y-3 flex flex-col min-h-0">
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest shrink-0 select-none">WRO Timeline Comments</h4>
-
-                    {/* textarea input save */}
-                    <div className="shrink-0 w-full space-y-1.5">
-                      <textarea
-                        value={wroCommentText}
-                        onChange={(e) => setWroCommentText(e.target.value)}
-                        placeholder="Write comment/note..."
-                        rows={2}
-                        className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddWroComment();
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddWroComment}
-                        className="w-full h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer"
-                      >
-                        Save comment
-                      </button>
-                    </div>
-
-                    {/* Timeline elements scroll area */}
-                    <div className="overflow-y-auto max-h-[160px] scrollbar-thin pl-0 pr-1 flex-1">
-                      <div className="relative border-l-2 border-slate-100 ml-2 pl-3.5 space-y-4 py-1">
-                        {selectedPODetail.comments && selectedPODetail.comments.length > 0 ? (
-                          selectedPODetail.comments.map((comment) => (
-                            <div key={comment.id} className="relative animate-in fade-in slide-in-from-top-1 duration-150">
-                              {/* Dot icon */}
-                              <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center">
-                                <span className="h-1 w-1 rounded-full bg-slate-350" />
-                              </span>
-                              <div>
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="text-xs font-normal text-slate-800 whitespace-pre-wrap leading-relaxed">{comment.text}</span>
-                                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 font-sans">
-                                    <span className="font-semibold text-slate-500">{comment.createdBy}</span>
-                                    <span>•</span>
-                                    <span>{comment.createdAt}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
-                          <div className="relative">
-                            <span className="absolute -left-[20px] top-[3px] h-3 w-3 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center">
-                              <span className="h-1 w-1 rounded-full bg-slate-350" />
-                            </span>
-                            <div>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-xs font-normal text-slate-800 italic text-[11px]">No comments added yet</span>
-                              </div>
-                            </div>
-                          </div>
+                          <tr>
+                            <td colSpan={5} className="py-6 text-center text-slate-400">
+                              No item details attached.
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-
                 </div>
               </div>
 
-              <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2.5 text-xs">
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedPODetail(null);
                     setIsEditingWroNo(false);
                   }}
-                  className="px-5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer outline-none md:btn-secondary-sheen"
+                  className="px-4.5 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold transition duration-150 cursor-pointer shadow-sm font-sans"
                 >
                   Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdateWRO}
+                  className="px-5.5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold hover:shadow-sm active:scale-95 transition cursor-pointer font-sans"
+                >
+                  Update
                 </button>
               </div>
             </motion.div>
@@ -5604,17 +6266,14 @@ export default function App() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100 z-50 my-8 mx-auto"
+              className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100 z-50 my-8 mx-auto"
             >
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 bg-brand-50 text-brand-600 rounded-lg flex items-center justify-center">
-                    <Printer className="h-4 w-4" />
-                  </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-900">Create shipping label</h2>
-                    <p className="text-[10px] text-slate-400 font-medium">Configure dimensions, weight, and carrier routing details</p>
+                    <p className="text-xs font-mono font-bold text-slate-500">Order: #{labelFormOrderNo}</p>
                   </div>
                 </div>
                 <button
@@ -5628,183 +6287,63 @@ export default function App() {
 
               {/* Modal Body */}
               <div className="p-6 overflow-y-auto max-h-[75vh] select-none text-slate-700 font-sans text-xs">
-                {/* Header Inputs Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-100 pb-5 mb-5">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Order *</label>
-                    <input
-                      type="text"
-                      value={labelFormOrderNo}
-                      disabled
-                      className="w-full h-9 px-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 font-semibold text-xs focus:ring-1 focus:ring-brand-500 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Shipping Destination Type *</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLabelFormDestinationType('Domestic');
-                          setLabelFormCountry('United States');
-                          setLabelFormCity('San Jose');
-                          setLabelFormZip('95112');
-                          triggerToast('Destination updated to Domestic (United States)', 'info');
-                        }}
-                        className={`h-9 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
-                          labelFormDestinationType === 'Domestic'
-                            ? 'bg-brand-50 border-brand-500 text-brand-700 font-extrabold'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        Domestic / Nội địa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLabelFormDestinationType('International');
-                          setLabelFormCountry('Japan');
-                          setLabelFormCity('Tokyo');
-                          setLabelFormZip('100-0001');
-                          triggerToast('Destination updated to International (Japan)', 'info');
-                        }}
-                        className={`h-9 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
-                          labelFormDestinationType === 'International'
-                            ? 'bg-brand-50 border-brand-500 text-brand-700 font-extrabold'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        International / Quốc tế
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Main 2-Column Split */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* Main 2-Column Split with adjusted width: 5/12 left, 7/12 right */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                   
-                  {/* Left Column: Sender and Recipient Details */}
-                  <div className="space-y-6">
-                    {/* Sender Details */}
+                  {/* Left Column: Warehouse and Recipient Details - col-span-5 */}
+                  <div className="space-y-6 lg:col-span-5">
+                    {/* Warehouse selection (Sender details renamed) */}
                     <div className="border border-slate-200/80 rounded-xl p-4 bg-slate-50/50 relative">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Sender details</span>
+                      <div className="flex justify-between items-center mb-2.5">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Warehouse</span>
                         <button
                           type="button"
-                          onClick={() => setIsSenderEditing(!isSenderEditing)}
-                          className="text-[11px] font-bold text-brand-600 hover:text-brand-700 cursor-pointer underline decoration-dotted font-sans"
+                          onClick={() => setIsAddingNewWarehouse(true)}
+                          className="text-[10px] font-bold text-brand-600 hover:text-brand-700 cursor-pointer flex items-center gap-0.5 outline-none select-none"
                         >
-                          {isSenderEditing ? 'Save Details' : 'Edit'}
+                          <Plus className="h-3 w-3" strokeWidth={2.5} />
+                          <span>Add New</span>
                         </button>
                       </div>
+                      
+                      <div className="space-y-3">
+                        <select
+                          value={selectedWarehouseForLabel}
+                          onChange={(e) => {
+                            const wName = e.target.value;
+                            setSelectedWarehouseForLabel(wName);
+                            const found = warehousePresets.find(w => w.name === wName);
+                            if (found) {
+                              setSenderFirstName(found.firstName);
+                              setSenderLastName(found.lastName);
+                              setSenderCompany(found.company);
+                              setSenderEmail(found.email);
+                              setSenderPhone(found.phone);
+                              setSenderCountry(found.country);
+                              setSenderAddress1(found.address1);
+                              setSenderAddress2(found.address2);
+                              setSenderCity(found.city);
+                              setSenderZip(found.zip);
+                              triggerToast(`Switched sender to ${wName}`, 'success');
+                            }
+                          }}
+                          className="w-full h-9 px-3 border border-slate-200 hover:border-slate-350 focus:border-brand-500 rounded-lg text-xs bg-white outline-none font-bold text-slate-800 cursor-pointer"
+                        >
+                          {warehousePresets.map((w) => (
+                            <option key={w.name} value={w.name}>{w.name}</option>
+                          ))}
+                        </select>
 
-                      {isSenderEditing ? (
-                        <div className="grid grid-cols-2 gap-3 pb-2 mt-2 animate-in fade-in duration-100 font-sans text-xs">
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">First name *</label>
-                            <input
-                              type="text"
-                              value={senderFirstName}
-                              onChange={(e) => setSenderFirstName(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Last name *</label>
-                            <input
-                              type="text"
-                              value={senderLastName}
-                              onChange={(e) => setSenderLastName(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Company</label>
-                            <input
-                              type="text"
-                              value={senderCompany}
-                              onChange={(e) => setSenderCompany(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Email</label>
-                            <input
-                              type="email"
-                              value={senderEmail}
-                              onChange={(e) => setSenderEmail(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Phone</label>
-                            <input
-                              type="text"
-                              value={senderPhone}
-                              onChange={(e) => setSenderPhone(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Country *</label>
-                            <input
-                              type="text"
-                              value={senderCountry}
-                              onChange={(e) => setSenderCountry(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Address Line 1 *</label>
-                            <input
-                              type="text"
-                              value={senderAddress1}
-                              onChange={(e) => setSenderAddress1(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Address Line 2 (Optional)</label>
-                            <input
-                              type="text"
-                              value={senderAddress2}
-                              onChange={(e) => setSenderAddress2(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">City *</label>
-                            <input
-                              type="text"
-                              value={senderCity}
-                              onChange={(e) => setSenderCity(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-slate-500 mb-1">ZIP / Postcode *</label>
-                            <input
-                              type="text"
-                              value={senderZip}
-                              onChange={(e) => setSenderZip(e.target.value)}
-                              className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-brand-500 bg-white"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-1 font-sans text-xs">
-                          <p className="font-bold text-slate-800">{senderFirstName} {senderLastName}</p>
-                          {senderCompany && <p className="text-slate-500 text-[11px] font-medium">{senderCompany}</p>}
-                          <p className="text-slate-600 mt-1 leading-relaxed">
-                            {senderAddress1}
-                            {senderAddress2 && `, ${senderAddress2}`}
+                        <div className="mt-2 font-sans text-xs text-slate-600 space-y-1 bg-white p-3 rounded-lg leading-relaxed border border-slate-150 shadow-2xs">
+                          <p className="font-extrabold text-slate-800">{senderCompany}</p>
+                          <p className="text-slate-500 font-medium">Contact: {senderFirstName} {senderLastName} ({senderPhone})</p>
+                          <p className="text-slate-600">
+                            {senderAddress1} {senderAddress2 && `, ${senderAddress2}`}
                             <br />
                             {senderCity}, {senderZip}
-                            <br />
-                            {senderCountry}
                           </p>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Recipient Details */}
@@ -5901,12 +6440,53 @@ export default function App() {
                             className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs"
                           />
                         </div>
+
+                        {/* Moved Shipping Destination Type Block to bottom container, sized like City */}
+                        <div className="col-span-2 mt-1">
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">Shipping Destination Type *</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLabelFormDestinationType('Domestic');
+                                setLabelFormCountry('United States');
+                                setLabelFormCity('San Jose');
+                                setLabelFormZip('95112');
+                                triggerToast('Destination updated to Domestic (United States)', 'info');
+                              }}
+                              className={`h-8 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                                labelFormDestinationType === 'Domestic'
+                                  ? 'bg-brand-50 border-brand-500 text-brand-700 font-extrabold'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              Domestic
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLabelFormDestinationType('International');
+                                setLabelFormCountry('Japan');
+                                setLabelFormCity('Tokyo');
+                                setLabelFormZip('100-0001');
+                                triggerToast('Destination updated to International (Japan)', 'info');
+                              }}
+                              className={`h-8 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                                labelFormDestinationType === 'International'
+                                  ? 'bg-brand-50 border-brand-500 text-brand-700 font-extrabold'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              International
+                            </button>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
                   </div>
-
-                  {/* Right Column: Packages & Carrier Selection */}
-                  <div className="space-y-6">
+                              {/* Right Column: Packages & Carrier Selection - col-span-7 */}
+                  <div className="space-y-6 lg:col-span-7">
                     {(() => {
                       const activePkg = labelFormPackages[0] || { weight: '47.92', length: '7.00', width: '5.00', height: '14.00' };
                       
@@ -5924,7 +6504,7 @@ export default function App() {
                               ...updates
                             }];
                           }
-                          return prev.map((p, idx) => idx === 0 ? { ...p, ...updates } : p);
+                           return prev.map((p, idx) => idx === 0 ? { ...p, ...updates } : p);
                         });
                       };
 
@@ -5935,250 +6515,233 @@ export default function App() {
                       };
 
                       return (
-                        <div className="border border-slate-200 rounded-xl p-5 bg-slate-50/20 space-y-5">
-                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-2">
-                              <Package className="h-4 w-4 text-brand-500" />
-                              <span>Package Details / Chi tiết kiện hàng</span>
+                        <div className="py-2 space-y-5 font-sans">
+                          {/* Inner Container heading */}
+                          <div className="border-b border-slate-100 pb-2">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                              Package Details
                             </h3>
-                            <div className="flex gap-2">
-                              <select
-                                value={labelFormDimUnit}
-                                onChange={(e) => setLabelFormDimUnit(e.target.value)}
-                                className="h-7 text-[10px] px-2 border border-slate-200 rounded-lg bg-white text-slate-600 font-bold focus:outline-hidden"
-                              >
-                                <option value="Inches (in)">in</option>
-                                <option value="Centimeters (cm)">cm</option>
-                              </select>
-                              <select
-                                value={labelFormWeightUnit}
-                                onChange={(e) => setLabelFormWeightUnit(e.target.value)}
-                                className="h-7 text-[10px] px-2 border border-slate-200 rounded-lg bg-white text-slate-600 font-bold focus:outline-hidden"
-                              >
-                                <option value="Ounces (oz)">oz</option>
-                                <option value="Pounds (lbs)">lbs</option>
-                                <option value="Kilograms (kg)">kg</option>
-                              </select>
-                            </div>
                           </div>
 
-                          <div className="grid grid-cols-[125px_1fr] items-center gap-y-4 text-xs">
-                            {/* Account */}
-                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</div>
-                            <div className="font-sans font-extrabold text-slate-800 text-sm">MyStore</div>
-
-                            {/* Carrier/Package */}
-                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Carrier/Package</div>
-                            <div>
-                              <select
-                                value={labelFormCarrierPackage}
-                                onChange={(e) => setLabelFormCarrierPackage(e.target.value)}
-                                className="w-full h-9 px-3 border border-slate-200 rounded-lg text-xs font-semibold bg-white text-slate-750 outline-hidden focus:ring-1 focus:ring-brand-500"
-                              >
-                                <option value="Package">Package</option>
-                                <option value="Flat Rate Envelope">Flat Rate Envelope</option>
-                                <option value="Large Poly Mailer">Large Poly Mailer</option>
-                                <option value="Box Preset">Box Preset</option>
-                              </select>
+                          <div className="space-y-4 text-xs font-sans">
+                            {/* Account Row */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-x-4 min-h-[36px]">
+                              <div className="text-sm font-medium text-slate-700">Account</div>
+                              <div className="text-sm font-extrabold text-slate-800 tracking-tight">MyStore</div>
                             </div>
 
-                            {/* Weight */}
-                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Weight</div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-28 pr-1 shadow-2xs">
-                                <input
-                                  type="text"
-                                  value={activePkg.weight}
-                                  onChange={(e) => updateActivePkg({ weight: e.target.value })}
-                                  className="w-full text-center text-xs font-semibold px-2 h-full outline-hidden text-slate-800"
-                                />
-                                <div className="flex flex-col h-7 w-5 divide-y divide-slate-100 border-l border-slate-100">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleIncrement('weight', 1)}
-                                    className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[8px] text-slate-400 hover:text-slate-600 outline-hidden"
+                            {/* Carrier/Package Row */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-x-4 min-h-[36px]">
+                              <div className="text-sm font-medium text-slate-700">Carrier/Package</div>
+                              <div>
+                                <div className="relative max-w-md">
+                                  <select
+                                    value={labelFormCarrierPackage}
+                                    onChange={(e) => setLabelFormCarrierPackage(e.target.value)}
+                                    className="w-full h-10 pl-3 pr-10 border border-slate-200 rounded-lg text-xs font-semibold bg-white text-slate-800 outline-none focus:border-brand-500 cursor-pointer appearance-none"
                                   >
-                                    ▲
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleIncrement('weight', -1)}
-                                    className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[8px] text-slate-400 hover:text-slate-600 outline-hidden"
+                                    <option value="Package">Package</option>
+                                    <option value="Flat Rate Envelope">Flat Rate Envelope</option>
+                                    <option value="Large Poly Mailer">Large Poly Mailer</option>
+                                    <option value="Box Preset">Box Preset</option>
+                                  </select>
+                                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <ChevronDown className="h-4 w-4" />
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Weight Row */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-x-4 min-h-[36px]">
+                              <div className="text-sm font-medium text-slate-700">Weight</div>
+                              <div className="flex items-center gap-3">
+                                {/* Weight numerical input with small spin controls */}
+                                <div className="flex items-center border border-slate-200 rounded bg-white h-10 w-28 overflow-hidden pr-0.5 shadow-2xs">
+                                  <input
+                                    type="text"
+                                    value={activePkg.weight}
+                                    onChange={(e) => updateActivePkg({ weight: e.target.value })}
+                                    className="w-full text-center text-xs font-semibold px-2 h-full outline-none text-slate-800"
+                                  />
+                                  <div className="flex flex-col h-8 w-5 divide-y divide-slate-100 border-l border-slate-100 select-none">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('weight', 1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleIncrement('weight', -1)}
+                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Weight Units selection Dropdown */}
+                                <div className="relative">
+                                  <select
+                                    value={labelFormWeightUnit.includes('oz') ? 'oz' : 'lbs'}
+                                    onChange={(e) => {
+                                      const u = e.target.value;
+                                      setLabelFormWeightUnit(u === 'oz' ? 'Ounces (oz)' : 'Pounds (lbs)');
+                                    }}
+                                    className="h-10 px-4 pr-8 border border-slate-200 bg-white rounded text-xs font-semibold text-slate-705 focus:outline-none cursor-pointer appearance-none"
                                   >
-                                    ▼
-                                  </button>
+                                    <option value="oz">oz</option>
+                                    <option value="lbs">lbs</option>
+                                  </select>
+                                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  </span>
                                 </div>
                               </div>
-                              <span className="text-[10px] text-slate-450 font-bold uppercase">{labelFormWeightUnit.slice(-3, -1) || 'oz'}</span>
                             </div>
 
-                            {/* Cubic Presets */}
-                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider align-top pt-2">Cubic</div>
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateActivePkg({ length: '15.00', width: '11.00', height: '1.00' });
-                                  triggerToast('Applied Cubic 10 preset dimensions', 'info');
-                                }}
-                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-[10px] font-bold text-slate-600 rounded-lg transition-all"
-                              >
-                                Cubic 10 (15x11x1)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateActivePkg({ length: '7.00', width: '5.00', height: '14.00' });
-                                  triggerToast('Applied Cubic 30 preset dimensions', 'info');
-                                }}
-                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-[10px] font-bold text-slate-600 rounded-lg transition-all"
-                              >
-                                Cubic 30 (7x5x14)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateActivePkg({ length: '12.00', width: '3.00', height: '15.00' });
-                                  triggerToast('Applied Cubic 40 preset dimensions', 'info');
-                                }}
-                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-[10px] font-bold text-slate-600 rounded-lg transition-all"
-                              >
-                                Cubic 40 (12x3x15)
-                              </button>
+                            {/* Cubic Presets Row */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-x-4 min-h-[36px]">
+                              <div className="text-sm font-medium text-slate-700">Cubic</div>
+                              <div className="grid grid-cols-3 gap-2.5 w-full max-w-xl">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateActivePkg({ length: '15.00', width: '11.00', height: '1.00' });
+                                    triggerToast('Cubic 10 applied', 'info');
+                                  }}
+                                  className="w-full py-1.5 px-1 text-center border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-xs font-semibold text-slate-600 rounded cursor-pointer transition whitespace-nowrap overflow-hidden text-ellipsis shadow-2xs"
+                                >
+                                  Cubic 10 (15x11x1)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateActivePkg({ length: '7.00', width: '5.00', height: '14.00' });
+                                    triggerToast('Cubic 30 applied', 'info');
+                                  }}
+                                  className="w-full py-1.5 px-1 text-center border border-slate-200 bg-white hover:bg-slate-50 hover:border-[#aaa] text-xs font-semibold text-slate-600 rounded cursor-pointer transition whitespace-nowrap overflow-hidden text-ellipsis shadow-2xs"
+                                >
+                                  Cubic 30 (7x5x14)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateActivePkg({ length: '12.00', width: '3.00', height: '15.00' });
+                                    triggerToast('Cubic 40 applied', 'info');
+                                  }}
+                                  className="w-full py-1.5 px-1 text-center border border-slate-200 bg-white hover:bg-slate-50 hover:border-[#aaa] text-xs font-semibold text-slate-600 rounded cursor-pointer transition whitespace-nowrap overflow-hidden text-ellipsis shadow-2xs"
+                                >
+                                  Cubic 40 (12x3x15)
+                                </button>
+                              </div>
                             </div>
 
-                            {/* Size L W H */}
-                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size ({labelFormDimUnit.slice(-3, -1) || 'in'})</div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                              {/* Length (L) */}
-                              <div className="flex items-center gap-1">
-                                <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-20 pr-1 shadow-2xs">
-                                  <input
-                                    type="text"
-                                    value={activePkg.length}
-                                    onChange={(e) => updateActivePkg({ length: e.target.value })}
-                                    className="w-full text-center text-xs font-semibold px-1 h-full outline-hidden text-slate-800"
-                                  />
-                                  <div className="flex flex-col h-7 w-4 divide-y divide-slate-100 border-l border-slate-100">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleIncrement('length', 1)}
-                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleIncrement('length', -1)}
-                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
-                                    >
-                                      ▼
-                                    </button>
+                            {/* Size (Inch) L, W, H with suffix and custom spinners side-by-side */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-x-4 min-h-[36px]">
+                              <div className="text-sm font-medium text-slate-700">Size (Inch)</div>
+                              <div className="grid grid-cols-3 gap-3 w-full max-w-xl text-xs">
+                                {/* Length Input with spinners and suffix */}
+                                <div className="flex items-center gap-1.5 w-full">
+                                  <div className="flex items-center border border-slate-200 rounded bg-white h-10 w-full overflow-hidden pr-0.5 shadow-2xs">
+                                    <input
+                                      type="text"
+                                      value={activePkg.length}
+                                      onChange={(e) => updateActivePkg({ length: e.target.value })}
+                                      className="w-full text-center text-xs font-semibold h-full outline-none text-slate-800"
+                                    />
+                                    <div className="flex flex-col h-8 w-5 divide-y divide-slate-100 border-l border-slate-100 select-none">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleIncrement('length', 1)}
+                                        className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                      >
+                                        ▲
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleIncrement('length', -1)}
+                                        className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                      >
+                                        ▼
+                                      </button>
+                                    </div>
                                   </div>
+                                  <span className="text-xs text-slate-500 font-bold select-none">(L)</span>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-bold">(L)</span>
-                              </div>
 
-                              {/* Width (W) */}
-                              <div className="flex items-center gap-1">
-                                <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-20 pr-1 shadow-2xs">
-                                  <input
-                                    type="text"
-                                    value={activePkg.width}
-                                    onChange={(e) => updateActivePkg({ width: e.target.value })}
-                                    className="w-full text-center text-xs font-semibold px-1 h-full outline-hidden text-slate-800"
-                                  />
-                                  <div className="flex flex-col h-7 w-4 divide-y divide-slate-100 border-l border-slate-100">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleIncrement('width', 1)}
-                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleIncrement('width', -1)}
-                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
-                                    >
-                                      ▼
-                                    </button>
+                                {/* Width Input with spinners and suffix */}
+                                <div className="flex items-center gap-1.5 w-full">
+                                  <div className="flex items-center border border-slate-200 rounded bg-white h-10 w-full overflow-hidden pr-0.5 shadow-2xs">
+                                    <input
+                                      type="text"
+                                      value={activePkg.width}
+                                      onChange={(e) => updateActivePkg({ width: e.target.value })}
+                                      className="w-full text-center text-xs font-semibold h-full outline-none text-slate-800"
+                                    />
+                                    <div className="flex flex-col h-8 w-5 divide-y divide-slate-100 border-l border-slate-100 select-none">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleIncrement('width', 1)}
+                                        className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                      >
+                                        ▲
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleIncrement('width', -1)}
+                                        className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                      >
+                                        ▼
+                                      </button>
+                                    </div>
                                   </div>
+                                  <span className="text-xs text-slate-500 font-bold select-none">(W)</span>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-bold">(W)</span>
-                              </div>
 
-                              {/* Height (H) */}
-                              <div className="flex items-center gap-1">
-                                <div className="flex items-center border border-slate-200 rounded-lg bg-white h-9 overflow-hidden w-20 pr-1 shadow-2xs">
-                                  <input
-                                    type="text"
-                                    value={activePkg.height}
-                                    onChange={(e) => updateActivePkg({ height: e.target.value })}
-                                    className="w-full text-center text-xs font-semibold px-1 h-full outline-hidden text-slate-800"
-                                  />
-                                  <div className="flex flex-col h-7 w-4 divide-y divide-slate-100 border-l border-slate-100">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleIncrement('height', 1)}
-                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
-                                    >
-                                      ▲
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleIncrement('height', -1)}
-                                      className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 hover:text-slate-600 outline-hidden"
-                                    >
-                                      ▼
-                                    </button>
+                                {/* Height Input with spinners and suffix */}
+                                <div className="flex items-center gap-1.5 w-full">
+                                  <div className="flex items-center border border-slate-200 rounded bg-white h-10 w-full overflow-hidden pr-0.5 shadow-2xs">
+                                    <input
+                                      type="text"
+                                      value={activePkg.height}
+                                      onChange={(e) => updateActivePkg({ height: e.target.value })}
+                                      className="w-full text-center text-xs font-semibold h-full outline-none text-slate-800"
+                                    />
+                                    <div className="flex flex-col h-8 w-5 divide-y divide-slate-100 border-l border-slate-100 select-none">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleIncrement('height', 1)}
+                                        className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                      >
+                                        ▲
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleIncrement('height', -1)}
+                                        className="flex-1 flex items-center justify-center hover:bg-slate-50 text-[7px] text-slate-400 outline-none cursor-pointer"
+                                      >
+                                        ▼
+                                      </button>
+                                    </div>
                                   </div>
+                                  <span className="text-xs text-slate-500 font-bold select-none">(H)</span>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-bold">(H)</span>
                               </div>
                             </div>
 
-                            {/* Get Rate Action button row */}
-                            <div className="col-span-2 py-1 flex justify-start pl-[125px]">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setLabelFormLoadingRates(true);
-                                  setLabelFormGetRateClicked(false);
-                                  setTimeout(() => {
-                                    setLabelFormLoadingRates(false);
-                                    setLabelFormGetRateClicked(true);
-                                    setLabelFormSelectedRateIndex(0);
-                                    setLabelFormSelectedCarrier('USPS GroundAdvantage - NSA Account');
-                                    triggerToast('Shipping rates calculated!', 'success');
-                                  }, 600);
-                                }}
-                                className="bg-brand-600 hover:bg-brand-700 text-white font-bold h-9 px-5 rounded-lg text-[11px] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                              >
-                                {labelFormLoadingRates ? (
-                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <RefreshCw className="h-3.5 w-3.5" />
-                                )}
-                                <span>Get Rate / Lấy giá cước</span>
-                              </button>
-                            </div>
-
-                            {/* Service rates list */}
-                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider align-top pt-2">Service</div>
-                            <div className="col-span-1">
-                              {labelFormLoadingRates ? (
-                                <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 flex flex-col justify-center items-center h-28 space-y-2">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-brand-500 border-t-transparent" />
-                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Calculating live carrier rates...</span>
-                                </div>
-                              ) : labelFormGetRateClicked ? (
-                                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                            {/* Service rates Row */}
+                            <div className="grid grid-cols-[140px_1fr] items-start gap-x-4 min-h-[36px] pt-1">
+                              <div className="text-sm font-medium text-slate-700 pt-2.5">Service</div>
+                              <div>
+                                <div className="space-y-2.5 max-w-xl max-h-[290px] overflow-y-auto pr-1">
                                   {getServicesList(
-                                    parseFloat(activePkg.weight || '47.92'),
-                                    parseFloat(activePkg.length || '7'),
-                                    parseFloat(activePkg.width || '5'),
-                                    parseFloat(activePkg.height || '14')
+                                    parseFloat(activePkg.weight || '47.72'),
+                                    parseFloat(activePkg.length || '7.00'),
+                                    parseFloat(activePkg.width || '5.00'),
+                                    parseFloat(activePkg.height || '14.00')
                                   ).map((srv, sIdx) => {
                                     const isSelected = labelFormSelectedRateIndex === sIdx;
                                     return (
@@ -6188,36 +6751,35 @@ export default function App() {
                                           setLabelFormSelectedRateIndex(sIdx);
                                           setLabelFormSelectedCarrier(srv.name);
                                         }}
-                                        className={`p-2.5 rounded-lg border cursor-pointer transition flex items-center justify-between ${
+                                        className={`p-3.5 rounded border cursor-pointer transition-all flex items-center justify-between ${
                                           isSelected
-                                            ? 'bg-rose-50/10 border-rose-500 shadow-sm'
-                                            : 'border-slate-200 bg-white hover:bg-slate-50/50'
+                                            ? 'border-rose-600 bg-rose-50/10'
+                                            : 'border-slate-250 bg-white hover:bg-slate-50/50'
                                         }`}
                                       >
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-3">
                                           <input
                                             type="radio"
                                             checked={isSelected}
-                                            readOnly
-                                            className="accent-rose-600 h-3 w-3"
+                                            onChange={() => {
+                                              setLabelFormSelectedRateIndex(sIdx);
+                                              setLabelFormSelectedCarrier(srv.name);
+                                            }}
+                                            className="accent-rose-600 h-4 w-4 shrink-0"
                                           />
-                                          <div>
-                                            <div className="text-[11px] font-extrabold text-slate-800">{srv.name}</div>
-                                            <div className="text-[9px] text-slate-400 mt-0.5 font-bold uppercase">{srv.est}</div>
+                                          <div className="leading-tight">
+                                            <div className="text-xs font-bold text-slate-800">{srv.name}</div>
+                                            <div className="text-[10px] text-slate-400 mt-1 font-semibold normal-case">{srv.est}</div>
                                           </div>
                                         </div>
-                                        <div className="text-sm font-black text-rose-700 tracking-tight">
+                                        <div className="text-base font-black text-rose-700 tracking-tight">
                                           {srv.price}
                                         </div>
                                       </div>
                                     );
                                   })}
                                 </div>
-                              ) : (
-                                <div className="p-5 border border-dashed border-slate-200 rounded-xl bg-slate-50/30 text-center text-slate-400 text-[10.5px] py-8 leading-relaxed">
-                                  Nhấp nút <strong className="text-brand-600">"Get Rate"</strong> ở trên để tải danh sách các mức giá cho cấu hình gói hàng này.
-                                </div>
-                              )}
+                              </div>
                             </div>
 
                           </div>
@@ -6234,7 +6796,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsLabelPopupOpen(false)}
-                  className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg cursor-pointer transition"
+                  className="px-5 h-10 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer outline-none transition-all"
                 >
                   Cancel
                 </button>
@@ -6384,10 +6946,623 @@ export default function App() {
                     setIsLabelPopupOpen(false);
                     triggerToast(`Shipping label generated for package reference successfully!`, 'success');
                   }}
-                  className="px-5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                  className="px-5 h-10 btn-primary-gradient text-white rounded-lg text-sm font-semibold cursor-pointer outline-none transition-all flex items-center gap-1.5"
                 >
                   <Printer className="h-4 w-4" />
                   <span>Create & Save Label</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ITEMS IN THIS SHIPMENT MODAL */}
+      <AnimatePresence>
+        {isShipmentItemsModalOpen && selectedOrderDetail && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsShipmentItemsModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 border border-slate-150 z-[130] space-y-6"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold font-sans text-slate-900 tracking-tight text-left">
+                  Items in this shipment
+                </h3>
+                <span className="text-base font-bold font-sans text-slate-900">
+                  Total: {selectedOrderDetail.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || selectedOrderDetail.quantity || 3}
+                </span>
+              </div>
+
+              {/* Items List / Table */}
+              <div className="font-sans text-xs text-left">
+                {/* Table Header */}
+                <div className="grid grid-cols-[1.5fr_1fr_1.2fr] pb-2 border-b border-slate-200 text-slate-800 font-bold text-[13px]">
+                  <div>Label ID</div>
+                  <div>Employee</div>
+                  <div>Time</div>
+                </div>
+
+                {/* Table Body */}
+                <div className="divide-y divide-slate-100 text-slate-800 text-[12px] text-left">
+                  {(() => {
+                    const totalItemsCount = selectedOrderDetail.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || selectedOrderDetail.quantity || 3;
+                    return Array.from({ length: totalItemsCount }).map((_, index) => {
+                      const num = totalItemsCount - index;
+                      const batchIdStr = String(selectedOrderDetail.id || '27').padStart(6, '0');
+                      const labelId = `061826-SJ-M-0000${batchIdStr}-${num}`;
+                      return (
+                        <div key={labelId} className="grid grid-cols-[1.5fr_1fr_1.2fr] py-3.5 select-all font-sans text-[12px] text-slate-800 hover:bg-slate-50 transition px-0.5 rounded">
+                          <div className="font-sans tracking-tight text-slate-900">{labelId}</div>
+                          <div className="font-sans text-slate-600">Tech</div>
+                          <div className="font-sans text-slate-600">2026-06-18 03:37:13</div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsShipmentItemsModalOpen(false)}
+                  className="px-5 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold hover:text-slate-900 transition flex items-center justify-center cursor-pointer shadow-sm font-sans"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SHIPMENT DETAILS REVIEW MODAL */}
+      <AnimatePresence>
+        {isShipmentDetailsModalOpen && selectedOrderDetail?.shipmentInfo && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsShipmentDetailsModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-150 z-[130] flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="text-left">
+                  <h3 className="text-base font-bold font-sans text-slate-900 tracking-tight">
+                    Shipment Label Details
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-400 mt-0.5">
+                    Order ID: {selectedOrderDetail.orderNumber || '#ORD'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsShipmentDetailsModalOpen(false)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-150 hover:text-slate-600 transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="p-6 space-y-5 overflow-y-auto text-left font-sans text-xs">
+                
+                {/* Visual Tracking & Status Header */}
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Tracking Number</div>
+                    <div className="font-mono text-sm font-bold text-slate-800 select-all tracking-wide">
+                      {selectedOrderDetail.shipmentInfo.trackingNumber || '1LSDBVU000ZLLNI'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Postage Price</div>
+                    <div className="font-sans text-sm font-extrabold text-slate-900 leading-none">
+                      {selectedOrderDetail.shipmentInfo.price || '$8.61'}
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Status</div>
+                    <div className="inline-flex items-center gap-1 text-yellow-650 font-extrabold tracking-wide text-xs">
+                      <span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                      Pre-Transit
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Left Column: Warehouse & Recipient Addresses */}
+                  <div className="space-y-4">
+                    {/* Warehouse Sender Card */}
+                    <div className="border border-slate-100 rounded-xl p-4 bg-white shadow-2xs space-y-3">
+                      <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-50">
+                        <Building className="h-3.5 w-3.5 text-slate-400" />
+                        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Warehouse / Sender</h4>
+                      </div>
+                      <div className="space-y-1 text-[12px] leading-relaxed">
+                        <div className="font-bold text-slate-800">
+                          {selectedOrderDetail.shipmentInfo.senderDetails?.name || 'Hiep Admin'}
+                        </div>
+                        <div className="text-slate-500 font-semibold">
+                          {selectedOrderDetail.shipmentInfo.senderDetails?.company || 'SwiftPOD LLC - Warehouse A'}
+                        </div>
+                        <div className="text-slate-500">
+                          {selectedOrderDetail.shipmentInfo.senderDetails?.address || '2070 S 7th St. Ste E, San Jose, CA 95112'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono pt-1">
+                          Contact: 408-555-0199
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recipient Details Card */}
+                    <div className="border border-slate-100 rounded-xl p-4 bg-white shadow-2xs space-y-3">
+                      <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-50">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Recipient Details</h4>
+                      </div>
+                      <div className="space-y-1 text-[12px] leading-relaxed">
+                        <div className="font-bold text-slate-800">
+                          {selectedOrderDetail.shipmentInfo.recipientDetails 
+                            ? `${selectedOrderDetail.shipmentInfo.recipientDetails.firstName} ${selectedOrderDetail.shipmentInfo.recipientDetails.lastName}`
+                            : (selectedOrderDetail.shipAddress?.name || 'Demi Wilkinson')
+                          }
+                        </div>
+                        {(selectedOrderDetail.shipmentInfo.recipientDetails?.company || selectedOrderDetail.shipAddress?.companyLine) && (
+                          <div className="text-slate-500 font-semibold">
+                            {selectedOrderDetail.shipmentInfo.recipientDetails?.company || selectedOrderDetail.shipAddress?.companyLine}
+                          </div>
+                        )}
+                        <div className="text-slate-500">
+                          {selectedOrderDetail.shipmentInfo.recipientDetails?.address1 || selectedOrderDetail.shipAddress?.addressLine || 'Store Boutique (Phoenix)'}
+                          {selectedOrderDetail.shipmentInfo.recipientDetails?.address2 ? `, ${selectedOrderDetail.shipmentInfo.recipientDetails.address2}` : ''}
+                        </div>
+                        <div className="text-slate-500 font-medium">
+                          {selectedOrderDetail.shipmentInfo.recipientDetails 
+                            ? `${selectedOrderDetail.shipmentInfo.recipientDetails.city || ''}, ${selectedOrderDetail.shipmentInfo.recipientDetails.zip || ''}, ${selectedOrderDetail.shipmentInfo.recipientDetails.country || 'United States'}`
+                            : (selectedOrderDetail.destination || 'United States')
+                          }
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-50 space-y-0.5">
+                          <div className="truncate">Email: {selectedOrderDetail.shipmentInfo.recipientDetails?.email || 'demiwilkinson@example.com'}</div>
+                          <div>Phone: {selectedOrderDetail.shipmentInfo.recipientDetails?.phone || '555-019-2834'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Packaging, Size, Service Details */}
+                  <div className="space-y-4">
+                    {/* Packages & Measurements */}
+                    <div className="border border-slate-100 rounded-xl p-4 bg-white shadow-2xs space-y-3">
+                      <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-50">
+                        <Box className="h-3.5 w-3.5 text-slate-405" />
+                        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Package Specification</h4>
+                      </div>
+                      <div className="space-y-2 text-[12px]">
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Carrier Unit:</span>
+                          <span className="font-bold text-slate-700">
+                            {selectedOrderDetail.shipmentInfo.carrier || 'UPS'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Poly Mailer:</span>
+                          <span className="font-semibold text-slate-700">
+                            Large Poly Mailer
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Weight:</span>
+                          <span className="font-mono text-slate-700 font-bold">
+                            {selectedOrderDetail.shipmentInfo.weight || '47.92 oz'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Dimensions:</span>
+                          <span className="font-mono text-slate-700 font-bold">
+                            {selectedOrderDetail.shipmentInfo.size ? `${selectedOrderDetail.shipmentInfo.size}` : '12.00 x 3.00 x 15.00 in'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Cubic Tier:</span>
+                          <span className="font-semibold text-slate-700">
+                            {(() => {
+                              const sz = selectedOrderDetail.shipmentInfo.size || '';
+                              if (sz.includes('15 x 11') || sz.includes('15x11')) return 'Cubic 10 (15x11x1)';
+                              if (sz.includes('7 x 5') || sz.includes('7x5')) return 'Cubic 30 (7x5x14)';
+                              return 'Cubic 40 (12x3x15)';
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Postal Service Specifications */}
+                    <div className="border border-slate-100 rounded-xl p-4 bg-white shadow-2xs space-y-3">
+                      <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-50">
+                        <Globe className="h-3.5 w-3.5 text-slate-405" />
+                        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Service Selected</h4>
+                      </div>
+                      <div className="space-y-2 text-[12px]">
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Mail Class:</span>
+                          <span className="font-extrabold text-slate-800 break-words leading-tight">
+                            {selectedOrderDetail.shipmentInfo.service || selectedOrderDetail.shipmentInfo.shippingMethod || 'USPS GroundAdvantage - NSA Account'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Label Link:</span>
+                          <span className="text-blue-600 underline font-semibold select-all break-all text-left">
+                            <a 
+                              href={selectedOrderDetail.shipmentInfo.labelLink || '#'} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 hover:text-blue-700"
+                            >
+                              Open Sample Label
+                              <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="text-slate-400">Printed on:</span>
+                          <span className="text-slate-500 font-mono">
+                            {selectedOrderDetail.shipmentInfo.printedDate || selectedOrderDetail.shipmentInfo.shipDate || '2026-06-18 03:37:13'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Footer Actions */}
+              <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Print Label</title>
+                            <style>
+                              body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #fff; }
+                              .box { width: 4in; height: 6in; border: 3px solid #000; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+                              .text-bold { font-weight: bold; }
+                              .title { font-size: 24px; font-weight: 900; border-bottom: 5px solid #000; padding-bottom: 5px; text-transform: uppercase; }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="box">
+                              <div class="title">\${selectedOrderDetail.shipmentInfo?.carrier || 'UPS'} GROUND</div>
+                              <div style="font-size: 11px; margin-top: 15px;">
+                                <div class="text-bold">SENDER:</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.senderDetails?.name || 'Hiep Admin'}</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.senderDetails?.company || 'SwiftPOD LLC - Warehouse A'}</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.senderDetails?.address || '2070 S 7th St. Ste E, San Jose, CA 95112'}</div>
+                              </div>
+                              <div style="font-size: 11px; margin-top: 20px;">
+                                <div class="text-bold">SHIP TO:</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.recipientDetails ? \`\${selectedOrderDetail.shipmentInfo.recipientDetails.firstName} \${selectedOrderDetail.shipmentInfo.recipientDetails.lastName}\` : (selectedOrderDetail.shipAddress?.name || 'Demi Wilkinson')}</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.recipientDetails?.company || selectedOrderDetail.shipAddress?.companyLine || ''}</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.recipientDetails?.address1 || selectedOrderDetail.shipAddress?.addressLine || 'Store Boutique (Phoenix)'}</div>
+                                <div>\${selectedOrderDetail.shipmentInfo?.recipientDetails ? \`\${selectedOrderDetail.shipmentInfo.recipientDetails.city || ''}, \${selectedOrderDetail.shipmentInfo.recipientDetails.zip || ''}, \${selectedOrderDetail.shipmentInfo.recipientDetails.country || 'United States'}\` : (selectedOrderDetail.destination || 'United States')}</div>
+                              </div>
+                              <div style="border-top: 2px solid #000; padding-top: 15px; margin-top: 30px; font-size: 12px; font-family: monospace; text-align: center;">
+                                TRACKING #: \${selectedOrderDetail.shipmentInfo?.trackingNumber || '1LSDBVU000ZLLNI'}
+                                <div style="background: #000; height: 45px; margin-top: 5px; width: 100%;"></div>
+                              </div>
+                            </div>
+                            <script>window.print();<\/script>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                    }
+                  }}
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Reprint Sticker</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsShipmentDetailsModalOpen(false)}
+                  className="px-5 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold hover:text-slate-900 transition flex items-center justify-center cursor-pointer shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CREATE NEW WAREHOUSE SUB-MODAL (SHIPPING CREATION OVERLAY) */}
+      <AnimatePresence>
+        {isAddingNewWarehouse && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddingNewWarehouse(false)}
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 border border-slate-150 z-[130] space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-sans text-left">
+                  Create New Warehouse
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingNewWarehouse(false)}
+                  className="p-1 hover:bg-slate-100 rounded-full transition cursor-pointer text-slate-400 hover:text-slate-600 outline-none"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Six row high-fidelity form layout */}
+              <div className="space-y-3 font-sans text-xs text-left">
+                {/* Display Name */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Warehouse Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newWhName}
+                    onChange={(e) => setNewWhName(e.target.value)}
+                    placeholder="Warehouse C"
+                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                  />
+                </div>
+
+                {/* Row 1: First name * & Last name * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      First name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhFirstName}
+                      onChange={(e) => setNewWhFirstName(e.target.value)}
+                      placeholder="Jane"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Last name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhLastName}
+                      onChange={(e) => setNewWhLastName(e.target.value)}
+                      placeholder="Doe"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Company & Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Company
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhCompany}
+                      onChange={(e) => setNewWhCompany(e.target.value)}
+                      placeholder="SwiftPOD LLC - Warehouse C"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newWhEmail}
+                      onChange={(e) => setNewWhEmail(e.target.value)}
+                      placeholder="warehouse-c@swiftpod.live"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: Phone & Country * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhPhone}
+                      onChange={(e) => setNewWhPhone(e.target.value)}
+                      placeholder="408-555-0200"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Country *
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhCountry}
+                      onChange={(e) => setNewWhCountry(e.target.value)}
+                      placeholder="United States"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: Address Line 1 */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Address Line 1 *
+                  </label>
+                  <input
+                    type="text"
+                    value={newWhAddress1}
+                    onChange={(e) => setNewWhAddress1(e.target.value)}
+                    placeholder="123 Shipping Lane"
+                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                  />
+                </div>
+
+                {/* Row 5: Address Line 2 (Optional) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Address Line 2 (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newWhAddress2}
+                    onChange={(e) => setNewWhAddress2(e.target.value)}
+                    placeholder="Suite 200 or Bldg 2"
+                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                  />
+                </div>
+
+                {/* Row 6: City * & ZIP / Postcode * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhCity}
+                      onChange={(e) => setNewWhCity(e.target.value)}
+                      placeholder="San Jose"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      ZIP / Postcode *
+                    </label>
+                    <input
+                      type="text"
+                      value={newWhZip}
+                      onChange={(e) => setNewWhZip(e.target.value)}
+                      placeholder="95112"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingNewWarehouse(false)}
+                  className="px-4.5 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold transition duration-150 cursor-pointer shadow-sm font-sans outline-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newWhName.trim() || !newWhFirstName.trim() || !newWhLastName.trim() || !newWhCountry.trim() || !newWhAddress1.trim() || !newWhCity.trim() || !newWhZip.trim()) {
+                      triggerToast('Name, First name, Last name, Country, Address Line 1, City, and ZIP/Postcode are required.', 'info');
+                      return;
+                    }
+                    
+                    const finalWh = {
+                      name: newWhName.trim(),
+                      company: newWhCompany.trim() || `${newWhFirstName.trim()} ${newWhLastName.trim()}`,
+                      firstName: newWhFirstName.trim(),
+                      lastName: newWhLastName.trim(),
+                      email: newWhEmail.trim() || 'warehouse@swiftpod.live',
+                      phone: newWhPhone.trim() || '408-555-0199',
+                      country: newWhCountry.trim(),
+                      address1: newWhAddress1.trim(),
+                      address2: newWhAddress2.trim(),
+                      city: newWhCity.trim(),
+                      zip: newWhZip.trim(),
+                    };
+
+                    setWarehousePresets((prev) => [...prev, finalWh]);
+                    setSelectedWarehouseForLabel(finalWh.name);
+                    
+                    // Directly switch form fields of sender to this new warehouse!
+                    setSenderFirstName(finalWh.firstName);
+                    setSenderLastName(finalWh.lastName);
+                    setSenderCompany(finalWh.company);
+                    setSenderEmail(finalWh.email);
+                    setSenderPhone(finalWh.phone);
+                    setSenderCountry(finalWh.country);
+                    setSenderAddress1(finalWh.address1);
+                    setSenderAddress2(finalWh.address2);
+                    setSenderCity(finalWh.city);
+                    setSenderZip(finalWh.zip);
+
+                    // Reset form fields
+                    setNewWhName('');
+                    setNewWhCompany('');
+                    setNewWhFirstName('');
+                    setNewWhLastName('');
+                    setNewWhEmail('');
+                    setNewWhPhone('');
+                    setNewWhCountry('United States');
+                    setNewWhAddress1('');
+                    setNewWhAddress2('');
+                    setNewWhCity('');
+                    setNewWhZip('');
+
+                    setIsAddingNewWarehouse(false);
+                    triggerToast(`New warehouse "${finalWh.name}" created and selected!`, 'success');
+                  }}
+                  className="px-4.5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition duration-150 cursor-pointer shadow-sm font-sans outline-none"
+                >
+                  Create & Select
                 </button>
               </div>
             </motion.div>

@@ -165,7 +165,7 @@ export function OrderManagementTab({
         <FilterDropdown
           label="Order Status"
           selected={orderStatusFilter}
-          options={['All statuses', 'New', 'Prepared', 'Shipped', 'Canceled']}
+          options={['All statuses', 'New', 'Prepared', 'Shipped']}
           onSelect={(val) => {
             setOrderStatusFilter(val);
             setOrderCurrentPage(1);
@@ -363,7 +363,6 @@ export function OrderManagementTab({
                           order.orderStatus === 'New' ? 'bg-amber-50 text-amber-700 border-amber-200'
                           : order.orderStatus === 'Prepared' ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : order.orderStatus === 'Shipped' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : order.orderStatus === 'Canceled' ? 'bg-slate-100 text-slate-400 border-slate-200 line-through'
                           : 'bg-slate-100 text-slate-400 border-slate-200'
                         }`}
                         style={{
@@ -375,7 +374,6 @@ export function OrderManagementTab({
                         <option value="New">New</option>
                         <option value="Prepared">Prepared</option>
                         <option value="Shipped">Shipped</option>
-                        <option value="Canceled">Canceled</option>
                       </select>
 
                       {pendingStatusUpdate?.orderId === order.id && (

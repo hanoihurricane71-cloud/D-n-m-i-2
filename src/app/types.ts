@@ -30,7 +30,7 @@ export interface PurchaseOrderItem {
 export interface PurchaseOrder {
   id: string;
   poNumber: string;
-  orderStatus: 'New' | 'Partial Received' | 'Received' | 'Cancelled';
+  orderStatus: 'Pending' | 'Received';
   totalQty: number;
   receivedQty: number;
   incomingQty: number;
@@ -123,6 +123,23 @@ export interface OrderManagementItem {
     price?: string;
     labelLink?: string;
     printedDate?: string;
+    senderDetails?: {
+      name: string;
+      company?: string;
+      address: string;
+    };
+    recipientDetails?: {
+      firstName: string;
+      lastName: string;
+      company?: string;
+      email?: string;
+      phone?: string;
+      country: string;
+      address1: string;
+      address2?: string;
+      city: string;
+      zip: string;
+    };
   };
   shipments?: Array<{
     trackingNumber: string;
@@ -173,6 +190,12 @@ export interface OrderManagementItem {
     addressLine: string;
     cityStateZip: string;
     phone: string;
+    address2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    email?: string;
   };
 }
 

@@ -32,9 +32,7 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
   const [integration, setIntegration] = useState<'OrderDesk' | 'SwiftPOD API'>('SwiftPOD API');
   const [storeName, setStoreName] = useState('');
   const [storeCode, setStoreCode] = useState('');
-  const [storeAddress, setStoreAddress] = useState('');
   const [returnAddress, setReturnAddress] = useState('');
-  const [billingAddress, setBillingAddress] = useState('');
 
   // Dropdown status within popup
   const [isIntegrationDropdownOpen, setIsIntegrationDropdownOpen] = useState(false);
@@ -42,11 +40,48 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
   // Validation error states
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
-  // Employee ID scanning states
-  const [employeeId, setEmployeeId] = useState('');
-  const [tempEmpId, setTempEmpId] = useState('');
+  // Warehouse selection and creation states
+  interface WarehouseItem {
+    id: string;
+    name: string;
+    address: string;
+  }
+
+  const [warehouses, setWarehouses] = useState<WarehouseItem[]>(() => {
+    const saved = localStorage.getItem('swiftpod_warehouses');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { id: 'wh-1', name: 'Carson Logistics Center', address: '456 Return Way, Carson, CA 90746' },
+      { id: 'wh-2', name: 'San Jose Terminal Warehouse', address: '2070 S 7th St. Ste E, San Jose, CA 95112' },
+      { id: 'wh-3', name: 'New York Central Hub', address: '100 Enterprise Way, Suite 400, New York, NY 10001' }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('swiftpod_warehouses', JSON.stringify(warehouses));
+  }, [warehouses]);
+
+  const [isWarehouseDropdownOpen, setIsWarehouseDropdownOpen] = useState(false);
+  const [isNewWarehouseModalOpen, setIsNewWarehouseModalOpen] = useState(false);
+  
+  // High-fidelity warehouse address fields
+  const [whFirstName, setWhFirstName] = useState('');
+  const [whLastName, setWhLastName] = useState('');
+  const [whCompany, setWhCompany] = useState('');
+  const [whEmail, setWhEmail] = useState('');
+  const [whPhone, setWhPhone] = useState('');
+  const [whCountry, setWhCountry] = useState('United States');
+  const [whAddress1, setWhAddress1] = useState('');
+  const [whAddress2, setWhAddress2] = useState('');
+  const [whCity, setWhCity] = useState('');
+  const [whZip, setWhZip] = useState('');
 
   const integrationDropdownRef = useRef<HTMLDivElement>(null);
+  const warehouseDropdownRef = useRef<HTMLDivElement>(null);
 
   // Click outside handlers
   useEffect(() => {
@@ -54,21 +89,13 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
       if (integrationDropdownRef.current && !integrationDropdownRef.current.contains(e.target as Node)) {
         setIsIntegrationDropdownOpen(false);
       }
+      if (warehouseDropdownRef.current && !warehouseDropdownRef.current.contains(e.target as Node)) {
+        setIsWarehouseDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const getEmployeeName = (empId: string) => {
-    const up = empId.toUpperCase().trim();
-    if (up === 'EMP001') return 'John Smith';
-    if (up === 'EMP002') return 'Sarah Lee';
-    if (up === 'EMP003') return 'Michael Chen';
-    if (up.startsWith('EMP')) {
-      return `Operator ${up.substring(3)}`;
-    }
-    return up || 'Unknown Employee';
-  };
 
   // Open modal for Creating
   const handleOpenCreateModal = () => {
@@ -76,12 +103,8 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
     setIntegration('SwiftPOD API');
     setStoreName('');
     setStoreCode('');
-    setStoreAddress('');
     setReturnAddress('');
-    setBillingAddress('');
     setValidationErrors({});
-    setEmployeeId('');
-    setTempEmpId('');
     setIsModalOpen(true);
   };
 
@@ -91,12 +114,8 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
     setIntegration(store.integration);
     setStoreName(store.storeName);
     setStoreCode(store.storeCode);
-    setStoreAddress(store.storeAddress || '');
     setReturnAddress(store.returnAddress);
-    setBillingAddress(store.billingAddress || '');
     setValidationErrors({});
-    setEmployeeId('');
-    setTempEmpId('');
     setIsModalOpen(true);
   };
 
@@ -114,17 +133,12 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!employeeId) {
-      triggerToast('Please scan & confirm your Employee ID card before saving.', 'info');
-      return;
-    }
-
     // Reset error state
     const errors: { [key: string]: string } = {};
 
     if (!storeName.trim()) errors.storeName = 'Store Name is required';
     if (!storeCode.trim()) errors.storeCode = 'Store Code is required';
-    if (!returnAddress.trim()) errors.returnAddress = 'Return Address is required';
+    if (!returnAddress.trim()) errors.returnAddress = 'Warehouse choice is required';
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -132,16 +146,14 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
       return;
     }
 
-    const empName = getEmployeeName(employeeId);
+    const empName = 'Hiep Tran';
 
     const storePayload = {
       active: editingStoreId ? (stores.find(s => s.id === editingStoreId)?.active ?? true) : true,
       integration,
       storeName: storeName.trim(),
       storeCode: storeCode.trim().toUpperCase().replace(/\s+/g, '_'),
-      storeAddress: storeAddress.trim() || undefined,
       returnAddress: returnAddress.trim(),
-      billingAddress: billingAddress.trim() || undefined,
       createdBy: editingStoreId ? (stores.find(s => s.id === editingStoreId)?.createdBy ?? empName) : empName
     };
 
@@ -333,19 +345,11 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
 
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide font-sans">Return Address</h4>
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide font-sans font-sans">Warehouse</h4>
                     <p className="text-slate-600 mt-1 font-medium leading-relaxed font-sans">{selectedStoreDetails.returnAddress || '—'}</p>
                   </div>
                   <div>
-                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide font-sans">Store Address</h4>
-                    <p className="text-slate-600 mt-1 font-medium leading-relaxed font-sans">{selectedStoreDetails.storeAddress || '—'}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide font-sans">Billing Address</h4>
-                    <p className="text-slate-600 mt-1 font-medium leading-relaxed font-sans">{selectedStoreDetails.billingAddress || '—'}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide font-sans">Created At</h4>
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide font-sans font-sans">Created At</h4>
                     <p className="text-slate-600 mt-1 font-medium leading-relaxed font-sans">{selectedStoreDetails.createdAt || '—'}</p>
                   </div>
                 </div>
@@ -384,7 +388,7 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.18 }}
-              className="relative w-full max-w-lg bg-white rounded-xl shadow-xl overflow-hidden flex flex-col border border-slate-100 z-10"
+              className="relative w-full max-w-lg bg-white rounded-xl shadow-xl overflow-visible flex flex-col border border-slate-100 z-10"
             >
               {/* Modal Banner Header */}
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 select-none">
@@ -404,83 +408,18 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
               </div>
 
               {/* Form Content body */}
-              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[80vh]">
-                
-                {/* Employee Scanning ID Component block */}
-                {employeeId ? (
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between mb-2 select-none">
-                    <div className="flex flex-col">
-                      <p className="text-[11px] text-emerald-600 font-semibold font-sans mb-1">
-                        Have a good day!
-                      </p>
-                      <h4 className="text-sm font-bold text-slate-800 leading-tight font-sans">
-                        {getEmployeeName(employeeId)}
-                      </h4>
-                      <p className="text-xs text-slate-500 font-semibold mt-0.5 font-sans">Inventory Specialist</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmployeeId('');
-                        setTempEmpId('');
-                      }}
-                      className="px-3.5 h-8 border border-slate-200 hover:bg-slate-100 bg-white text-slate-700 rounded-lg text-xs font-bold transition duration-150 shadow-sm cursor-pointer inline-flex items-center justify-center shrink-0 font-sans"
-                    >
-                      Log out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 flex flex-col justify-center space-y-2 mb-2 select-none">
-                    <div className="flex justify-between items-center">
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide font-sans">
-                        Employee ID <span className="text-slate-400 font-normal ml-0.5">*</span>
-                      </label>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={tempEmpId}
-                          onChange={(e) => setTempEmpId(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (tempEmpId.trim()) {
-                                setEmployeeId(tempEmpId);
-                              }
-                            }
-                          }}
-                          placeholder="Enter Employee ID"
-                          className="w-full h-10 px-3.5 border border-slate-200 bg-white rounded-lg text-xs text-slate-800 font-semibold focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-sans animate-in fade-in duration-200"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (tempEmpId.trim()) {
-                            setEmployeeId(tempEmpId);
-                          }
-                        }}
-                        disabled={!tempEmpId.trim()}
-                        className="px-4 h-10 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition duration-150 cursor-pointer shadow-sm shrink-0 font-sans"
-                      >
-                        Confirm
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-visible">
 
                 {/* Integration Dropdown DropSelect */}
-                <div className="space-y-1">
+                <div className="space-y-1 text-left">
                   <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans">
                     Integration *
                   </label>
                   <div className="relative" ref={integrationDropdownRef}>
                     <button
                       type="button"
-                      disabled={!employeeId}
                       onClick={() => setIsIntegrationDropdownOpen(!isIntegrationDropdownOpen)}
-                      className="h-10 px-3.5 w-full border border-slate-200 bg-white hover:bg-slate-50/50 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 cursor-pointer flex items-center justify-between gap-1 select-none font-sans"
+                      className="h-10 px-3.5 w-full border border-slate-200 bg-white hover:bg-slate-50/50 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 cursor-pointer flex items-center justify-between gap-1 select-none font-sans"
                     >
                       <span className="text-slate-800 font-bold">{integration}</span>
                       <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -523,15 +462,14 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
                 </div>
 
                 {/* Store Name & Store Code Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                   {/* Store Name field */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans font-sans">
                       Store Name *
                     </label>
                     <input
                       type="text"
-                      disabled={!employeeId}
                       placeholder="e.g. Olivia Rhye Store"
                       value={storeName}
                       onChange={(e) => {
@@ -540,23 +478,22 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
                           setValidationErrors(prev => ({ ...prev, storeName: '' }));
                         }
                       }}
-                      className={`h-10 px-3.5 w-full border rounded-lg text-xs bg-white text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition font-sans ${
+                      className={`h-10 px-3.5 w-full border rounded-lg text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition font-sans ${
                         validationErrors.storeName ? 'border-rose-400' : 'border-slate-200'
                       }`}
                     />
                     {validationErrors.storeName && (
-                      <p className="text-[10px] text-rose-500 font-medium pl-0.5 mt-0.5 font-sans">{validationErrors.storeName}</p>
+                      <p className="text-[10px] text-rose-500 font-medium pl-0.5 mt-0.5 font-sans justify-start flex">{validationErrors.storeName}</p>
                     )}
                   </div>
 
                   {/* Store Code field */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans font-sans">
                       Store Code *
                     </label>
                     <input
                       type="text"
-                      disabled={!employeeId}
                       placeholder="e.g. OLIVIA_RHYE_01"
                       value={storeCode}
                       onChange={(e) => {
@@ -565,71 +502,101 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
                           setValidationErrors(prev => ({ ...prev, storeCode: '' }));
                         }
                       }}
-                      className={`h-10 px-3.5 w-full border rounded-lg text-xs bg-white text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition font-mono ${
+                      className={`h-10 px-3.5 w-full border rounded-lg text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition font-mono ${
                         validationErrors.storeCode ? 'border-rose-400' : 'border-slate-200'
                       }`}
                     />
                     {validationErrors.storeCode && (
-                      <p className="text-[10px] text-rose-500 font-medium pl-0.5 mt-0.5 font-sans">{validationErrors.storeCode}</p>
+                      <p className="text-[10px] text-rose-500 font-medium pl-0.5 mt-0.5 font-sans justify-start flex">{validationErrors.storeCode}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Return Address (Required) */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans">
-                      Return Address *
-                    </label>
+                {/* Return Address / Warehouse choice (Dropdown picker) */}
+                <div className="space-y-1 text-left">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans font-sans">
+                    Warehouse *
+                  </label>
+                  <div className="relative" ref={warehouseDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsWarehouseDropdownOpen(!isWarehouseDropdownOpen)}
+                      className="h-10 px-3.5 w-full border border-slate-200 bg-white hover:bg-slate-50/50 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 cursor-pointer flex items-center justify-between gap-1 select-none font-sans"
+                    >
+                      {returnAddress ? (
+                        <div className="text-left">
+                          <span className="text-slate-800 font-bold block truncate">
+                            {warehouses.find(wh => wh.address === returnAddress)?.name || 'Custom Warehouse'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block truncate leading-none mt-0.5 font-normal">
+                            {returnAddress}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 font-normal">Select a warehouse...</span>
+                      )}
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    </button>
+
+                    <AnimatePresence>
+                      {isWarehouseDropdownOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 4 }}
+                          transition={{ duration: 0.1 }}
+                          className="absolute left-0 w-full bg-white rounded-lg shadow-lg border border-slate-200 z-[70] py-1 mt-1 max-h-60 overflow-y-auto font-sans"
+                        >
+                          {warehouses.map((wh) => {
+                            const isSelected = returnAddress === wh.address;
+                            return (
+                              <button
+                                key={wh.id}
+                                type="button"
+                                onClick={() => {
+                                  setReturnAddress(wh.address);
+                                  setIsWarehouseDropdownOpen(false);
+                                  if (validationErrors.returnAddress) {
+                                    setValidationErrors(prev => ({ ...prev, returnAddress: '' }));
+                                  }
+                                }}
+                                className={`w-full text-left px-3.5 py-2 text-xs transition-colors border-b border-slate-50 last:border-0 flex items-center justify-between cursor-pointer hover:bg-slate-50 ${
+                                  isSelected ? 'bg-slate-50/60 font-semibold' : ''
+                                }`}
+                              >
+                                <div className="pr-2 truncate">
+                                  <span className={`block font-bold truncate ${isSelected ? 'text-brand-650' : 'text-slate-700'}`}>
+                                    {wh.name}
+                                  </span>
+                                  <span className="block text-[10px] text-slate-400 truncate mt-0.5">
+                                    {wh.address}
+                                  </span>
+                                </div>
+                                {isSelected && <Check className="h-4 w-4 text-brand-600 shrink-0 select-none" />}
+                              </button>
+                            );
+                          })}
+
+                          {/* Create new warehouse option at the end */}
+                          <div className="border-t border-slate-100 p-1.5 bg-slate-50/70 sticky bottom-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsWarehouseDropdownOpen(false);
+                                setIsNewWarehouseModalOpen(true);
+                              }}
+                              className="w-full text-center py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-lg transition"
+                            >
+                              + Create new warehouse
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                  <input
-                    type="text"
-                    disabled={!employeeId}
-                    placeholder="e.g. 456 Return Way, Carson, CA 90746"
-                    value={returnAddress}
-                    onChange={(e) => {
-                      setReturnAddress(e.target.value);
-                      if (e.target.value.trim() && validationErrors.returnAddress) {
-                        setValidationErrors(prev => ({ ...prev, returnAddress: '' }));
-                      }
-                    }}
-                    className={`h-10 px-3.5 w-full border rounded-lg text-xs bg-white text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition font-sans ${
-                      validationErrors.returnAddress ? 'border-rose-400' : 'border-slate-200'
-                    }`}
-                  />
                   {validationErrors.returnAddress && (
-                    <p className="text-[10px] text-rose-500 font-medium pl-0.5 mt-0.5 font-sans">{validationErrors.returnAddress}</p>
+                    <p className="text-[10px] text-rose-500 font-medium pl-0.5 mt-0.5 font-sans justify-start flex">{validationErrors.returnAddress}</p>
                   )}
-                </div>
-
-                {/* Store Address (Optional) */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans">
-                    Store Address
-                  </label>
-                  <input
-                    type="text"
-                    disabled={!employeeId}
-                    placeholder="e.g. 123 Fashion Blvd, Los Angeles, CA 90015"
-                    value={storeAddress}
-                    onChange={(e) => setStoreAddress(e.target.value)}
-                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition font-sans"
-                  />
-                </div>
-
-                {/* Billing Address (Optional) */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block font-sans">
-                    Billing Address
-                  </label>
-                  <input
-                    type="text"
-                    disabled={!employeeId}
-                    placeholder="e.g. Matching Store Address or custom"
-                    value={billingAddress}
-                    onChange={(e) => setBillingAddress(e.target.value)}
-                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition font-sans"
-                  />
                 </div>
 
                 {/* Action CTA Group Footer buttons */}
@@ -643,14 +610,239 @@ export const StoreManagementTab: React.FC<StoreManagementTabProps> = ({
                   </button>
                   <button
                     type="submit"
-                    disabled={!employeeId}
-                    className="px-5.5 h-9 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold hover:shadow-sm active:scale-95 transition cursor-pointer font-sans"
+                    className="px-5.5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold hover:shadow-sm active:scale-95 transition cursor-pointer font-sans"
                   >
                     {editingStoreId ? 'Save Changes' : 'Create Store'}
                   </button>
                 </div>
 
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CREATE NEW WAREHOUSE SUB-MODAL */}
+      <AnimatePresence>
+        {isNewWarehouseModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsNewWarehouseModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 border border-slate-150 z-[110] space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-sans text-left">
+                  Create New Warehouse
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsNewWarehouseModalOpen(false)}
+                  className="p-1 hover:bg-slate-100 rounded-full transition cursor-pointer text-slate-400 hover:text-slate-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Six row high-fidelity form layout */}
+              <div className="space-y-3 font-sans text-xs text-left">
+                {/* Row 1: First name * & Last name * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      First name *
+                    </label>
+                    <input
+                      type="text"
+                      value={whFirstName}
+                      onChange={(e) => setWhFirstName(e.target.value)}
+                      placeholder="Lana"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Last name *
+                    </label>
+                    <input
+                      type="text"
+                      value={whLastName}
+                      onChange={(e) => setWhLastName(e.target.value)}
+                      placeholder="Steiner"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Company & Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Company
+                    </label>
+                    <input
+                      type="text"
+                      value={whCompany}
+                      onChange={(e) => setWhCompany(e.target.value)}
+                      placeholder="Lana Steiner"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={whEmail}
+                      onChange={(e) => setWhEmail(e.target.value)}
+                      placeholder="lanasteiner@example.com"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: Phone & Country * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={whPhone}
+                      onChange={(e) => setWhPhone(e.target.value)}
+                      placeholder="555-019-2834"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Country *
+                    </label>
+                    <input
+                      type="text"
+                      value={whCountry}
+                      onChange={(e) => setWhCountry(e.target.value)}
+                      placeholder="United States"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: Address Line 1 */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Address Line 1 *
+                  </label>
+                  <input
+                    type="text"
+                    value={whAddress1}
+                    onChange={(e) => setWhAddress1(e.target.value)}
+                    placeholder="Warehouse B Regional Store"
+                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                  />
+                </div>
+
+                {/* Row 5: Address Line 2 (Optional) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Address Line 2 (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={whAddress2}
+                    onChange={(e) => setWhAddress2(e.target.value)}
+                    placeholder="Suite 100 or Bldg B"
+                    className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                  />
+                </div>
+
+                {/* Row 6: City * & ZIP / Postcode * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      value={whCity}
+                      onChange={(e) => setWhCity(e.target.value)}
+                      placeholder="San Jose"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      ZIP / Postcode *
+                    </label>
+                    <input
+                      type="text"
+                      value={whZip}
+                      onChange={(e) => setWhZip(e.target.value)}
+                      placeholder="95112"
+                      className="h-10 px-3.5 w-full border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 text-xs font-semibold animate-in fade-in duration-150">
+                <button
+                  type="button"
+                  onClick={() => setIsNewWarehouseModalOpen(false)}
+                  className="px-4.5 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold transition duration-150 cursor-pointer shadow-sm font-sans"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!whFirstName.trim() || !whLastName.trim() || !whCountry.trim() || !whAddress1.trim() || !whCity.trim() || !whZip.trim()) {
+                      triggerToast('First name, Last name, Country, Address Line 1, City, and ZIP/Postcode are required.', 'info');
+                      return;
+                    }
+                    const finalName = whCompany.trim() || `${whFirstName.trim()} ${whLastName.trim()}`;
+                    const finalAddress = `${whAddress1.trim()}${whAddress2.trim() ? ', ' + whAddress2.trim() : ''}, ${whCity.trim()}, ${whCountry.trim()} ${whZip.trim()}`;
+                    const newWh = {
+                      id: `wh-${Date.now()}`,
+                      name: finalName,
+                      address: finalAddress
+                    };
+                    setWarehouses(prev => [...prev, newWh]);
+                    setReturnAddress(newWh.address);
+                    
+                    // Reset fields
+                    setWhFirstName('');
+                    setWhLastName('');
+                    setWhCompany('');
+                    setWhEmail('');
+                    setWhPhone('');
+                    setWhCountry('United States');
+                    setWhAddress1('');
+                    setWhAddress2('');
+                    setWhCity('');
+                    setWhZip('');
+                    
+                    setIsNewWarehouseModalOpen(false);
+                    triggerToast(`Warehouse "${newWh.name}" created successfully!`, 'success');
+                  }}
+                  className="px-5.5 h-9 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold hover:shadow-sm active:scale-95 transition cursor-pointer font-sans"
+                >
+                  Save Warehouse
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

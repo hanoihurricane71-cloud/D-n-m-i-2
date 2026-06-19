@@ -171,15 +171,15 @@ export function CreatePurchaseOrderModal({ isOpen, onClose, onCreate }: CreatePu
 
     const itemsWithQty = items.map(i => ({
       ...i,
-      receivedQty: i.receivedQty ?? i.qty,
-      incomingQty: i.incomingQty ?? i.qty
+      receivedQty: 0,
+      incomingQty: i.qty
     }));
 
     onCreate({
       poNumber,
-      orderStatus: 'New',
+      orderStatus: 'Pending',
       totalQty,
-      receivedQty: totalQty, // simple realistic mock auto
+      receivedQty: 0,
       incomingQty: totalQty,
       tracking: trackingNumber,
       ageDays: 1,
