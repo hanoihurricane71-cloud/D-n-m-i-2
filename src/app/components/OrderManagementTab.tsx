@@ -122,14 +122,14 @@ export function OrderManagementTab({
   return (
     <>
       {/* Header context */}
-      <div className="px-6 pt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Order management</h1>
-        </div>
+      <div className="px-6 pt-6 select-none">
+        <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Order management</h1>
       </div>
 
       {/* Filters Area */}
-      <div className="px-6 pt-5 pb-2 flex flex-wrap items-center gap-2.5 justify-start">
+      <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-wrap gap-3 items-center justify-between">
+        {/* Left aligned Filters block */}
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
         {/* Search Bar */}
         <div
           className={`relative h-10 transition-all duration-300 ease-in-out ${
@@ -259,6 +259,7 @@ export function OrderManagementTab({
             className="absolute pointer-events-none opacity-0 w-0 h-0 text-transparent bg-transparent border-0"
             style={{ top: '50%', left: '75%' }}
           />
+        </div>
         </div>
 
         {/* Reset Filters */}

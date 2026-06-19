@@ -216,7 +216,7 @@ export function ProductTab({
   return (
     <>
       {/* Header context: Product details */}
-      <div className="px-6 pt-6 pb-2">
+      <div className="px-6 pt-6 select-none">
         <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Product</h1>
       </div>
 
@@ -336,17 +336,18 @@ export function ProductTab({
 
       {/* Table Container */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[1000px]">
+        <table className="w-full text-left border-collapse min-w-[1000px] table-fixed">
 
           {/* Header row */}
           <thead>
             <tr className="bg-[#F8F9FA] text-slate-500 border-b border-slate-100 text-[11.5px] font-semibold uppercase tracking-wider whitespace-nowrap">
               {activeTab === 'Product' && (
                 <>
-                  <th className="py-3 pl-8 pr-4 select-none font-sans w-[45%] text-left">Name</th>
-                  <th className="py-3 px-4 font-sans w-[25%] text-left">SKU</th>
-                  <th className="py-3 px-4 font-sans text-right w-[15%]">Incoming stock</th>
-                  <th className="py-3 pl-4 pr-10 font-sans text-right w-[15%]">Stock qty</th>
+                  <th className="py-3 pl-8 pr-4 select-none font-sans w-[20%] text-left">Name</th>
+                  <th className="py-3 px-4 font-sans w-[20%] text-left">SKU</th>
+                  <th className="py-3 px-4 font-sans text-right w-[20%]">Incoming stock</th>
+                  <th className="py-3 px-4 font-sans w-[20%] text-left select-none"></th>
+                  <th className="py-3 px-4 font-sans text-left w-[20%]">Stock qty</th>
                 </>
               )}
               {activeTab === 'Type' && (
@@ -413,7 +414,8 @@ export function ProductTab({
                     <td className="py-4 px-4 font-mono font-medium text-right whitespace-nowrap text-slate-700">
                       {product.incomingStock}
                     </td>
-                    <td className="py-4 pl-4 pr-10 font-sans text-right whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap"></td>
+                    <td className="py-4 px-4 font-sans text-left whitespace-nowrap">
                       {product.stockQty.toLowerCase().includes('out of stock') ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-100 whitespace-nowrap">Out of stock</span>
                       ) : (
@@ -424,7 +426,7 @@ export function ProductTab({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-slate-400 text-sm font-sans">
+                  <td colSpan={5} className="py-12 text-center text-slate-400 text-sm font-sans">
                     <div className="max-w-[280px] mx-auto flex flex-col items-center gap-2">
                       <AlertCircle className="h-8 w-8 text-slate-300" />
                       <span className="font-semibold text-slate-600">No matching products found</span>

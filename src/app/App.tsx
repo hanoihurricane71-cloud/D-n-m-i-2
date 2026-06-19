@@ -923,6 +923,8 @@ export default function App() {
   const [isVoidConfirmOpen, setIsVoidConfirmOpen] = useState(false);
   const [isShipmentItemsModalOpen, setIsShipmentItemsModalOpen] = useState(false);
   const [isShipmentDetailsModalOpen, setIsShipmentDetailsModalOpen] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [orderRejectReasonText, setOrderRejectReasonText] = useState('');
   const [isRejectingOrder, setIsRejectingOrder] = useState(false);
@@ -2300,155 +2302,168 @@ export default function App() {
   }, [activeFilteredCount, totalPages, currentPage]);
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] font-sans text-slate-800 flex flex-col md:flex-row antialiased">
+    <div className="min-h-screen bg-[#F4F5F7] font-sans text-slate-800 flex flex-col antialiased">
       
-      {/* LEFT SIDEBAR - Desktop and dynamic responsive overlay */}
-      <aside className="w-full md:w-64 md:h-screen md:sticky md:top-0 bg-white border-b md:border-b-0 md:border-r border-slate-200/80 flex flex-col justify-between shrink-0">
-        <div className="p-5 flex flex-col gap-6">
+      {/* TOP HEADER NAVIGATION - Landing / Modern web style header */}
+      <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-40 select-none shadow-xs">
+        <div className="px-4 lg:px-6 h-16 flex items-center justify-between">
           
-          {/* Logo & Platform Name */}
-          <div className="flex items-center gap-3 pl-[8px] group logo-group select-none">
-            <div className="h-9 w-9 logo-gradient rounded-xl flex items-center justify-center text-white font-extrabold shadow-sm relative overflow-hidden">
-              <span className="relative z-10 text-base font-display">P</span>
-            </div>
-            <div>
-              <span className="font-display font-bold text-lg tracking-tight logo-text-gradient block leading-none">PAP system</span>
-            </div>
-          </div>
-
-          {/* Navigation group */}
-          <nav className="space-y-1.5" id="sidebar-navigation">
-            <button
-              onClick={() => setActiveNavItem('Order management')}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Order management' 
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <ClipboardList className={`h-5 w-5 ${activeNavItem === 'Order management' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>Order management</span>
-              {activeNavItem === 'Order management' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveNavItem('Purchase order')}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Purchase order'
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <Inbox className={`h-5 w-5 ${activeNavItem === 'Purchase order' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>WRO</span>
-              {activeNavItem === 'Purchase order' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveNavItem('Product')}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Product'
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <Shirt className={`h-5 w-5 ${activeNavItem === 'Product' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>Product</span>
-              {activeNavItem === 'Product' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveNavItem('Store')}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Store'
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <Store className={`h-5 w-5 ${activeNavItem === 'Store' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>Store management</span>
-              {activeNavItem === 'Store' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveNavItem('Location');
-              }}
-              className={`
-                w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer hidden
-                ${activeNavItem === 'Location'
-                  ? 'bg-slate-100/90 text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }
-              `}
-            >
-              <div className="relative h-5 w-5 shrink-0 flex items-center justify-center">
-                <Package className={`h-5 w-5 ${activeNavItem === 'Location' ? 'text-brand-600' : 'text-slate-400'}`} />
-                <div className={`absolute -bottom-1 -right-1 rounded-full p-[1px] border border-white/60 shadow-xs flex items-center justify-center ${activeNavItem === 'Location' ? 'bg-slate-100' : 'bg-white'}`}>
-                  <MapPin className={`h-2.5 w-2.5 ${activeNavItem === 'Location' ? 'text-brand-600' : 'text-slate-400'}`} />
-                </div>
+          {/* Left side: Logo & Navigation items */}
+          <div className="flex items-center gap-6 lg:gap-8">
+            {/* Logo & Platform Name */}
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 logo-gradient rounded-xl flex items-center justify-center text-white font-extrabold shadow-sm relative overflow-hidden shrink-0">
+                <span className="relative z-10 text-base font-display">P</span>
               </div>
-              <span>Location</span>
-              {activeNavItem === 'Location' && (
-                <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
-              )}
-            </button>
-          </nav>
-
-        </div>
-
-        {/* User Profile Info Card & Footer bottom-left */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          <div 
-            onClick={() => setIsLogoutConfirmOpen(true)}
-            className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-rose-50/40 cursor-pointer transition-colors group relative border border-transparent hover:border-rose-100/30"
-          >
-            <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
-              alt="Hiep Tran avatar"
-              referrerPolicy="no-referrer"
-              className="h-10 w-10 rounded-full object-cover border border-slate-200 group-hover:border-rose-200 transition-colors"
-            />
-            <div className="flex-1 min-w-0">
-              <span className="text-sm font-semibold text-slate-800 block truncate leading-tight group-hover:text-rose-700 transition-colors">
-                Hiep Tran
-              </span>
-              <span className="text-xs text-slate-500 block truncate">
-                hiep@readulikeabook.com
-              </span>
+              <div>
+                <span className="font-display font-bold text-lg tracking-tight logo-text-gradient block leading-none">PAP system</span>
+              </div>
             </div>
-            <button 
-              type="button" 
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLogoutConfirmOpen(true);
-              }}
-              className="p-1.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
-              title="Log out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
 
-      {/* RIGHT MAIN PANEL - Floating style container inside matching light gray canvas */}
+            {/* Navigation links - Desktop without Icons */}
+            <nav className="hidden md:flex items-center gap-1.5" id="top-navigation">
+              <button
+                onClick={() => setActiveNavItem('Order management')}
+                className={`
+                  px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
+                  ${activeNavItem === 'Order management' 
+                    ? 'bg-slate-100 text-slate-900 shadow-3xs' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }
+                `}
+              >
+                Order management
+              </button>
+
+              <button
+                onClick={() => setActiveNavItem('Purchase order')}
+                className={`
+                  px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
+                  ${activeNavItem === 'Purchase order'
+                    ? 'bg-slate-100 text-slate-900 shadow-3xs'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }
+                `}
+              >
+                WRO
+              </button>
+
+              <button
+                onClick={() => setActiveNavItem('Product')}
+                className={`
+                  px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
+                  ${activeNavItem === 'Product'
+                    ? 'bg-slate-100 text-slate-900 shadow-3xs'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }
+                `}
+              >
+                Product
+              </button>
+            </nav>
+          </div>
+
+          {/* Right side: Avatar dropdown clicker */}
+          <div className="flex items-center gap-3 relative">
+            {/* User Profile Info Card inside a round or pill button with border & chevron */}
+            <div className="relative">
+              <button 
+                type="button"
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="flex items-center h-[42px] gap-3 pl-[6px] pr-4 rounded-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 transition-all duration-150 cursor-pointer select-none"
+                title="Account menu"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
+                  alt="Hiep Tran avatar"
+                  referrerPolicy="no-referrer"
+                  className="h-8 w-8 rounded-full object-cover border border-slate-200 shrink-0"
+                />
+                <div className="hidden sm:block text-left">
+                  <div className="text-[12.5px] font-bold text-slate-700 font-sans leading-tight">
+                    Hiep Tran
+                  </div>
+                  <div className="text-[10.5px] text-slate-400 font-sans leading-none mt-0.5">
+                    max@work.com
+                  </div>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-slate-400 transition-all duration-200 ${isUserDropdownOpen ? 'rotate-180' : 'rotate-0'} shrink-0`} />
+              </button>
+
+              {/* Custom User Dropdown Menu with fade list */}
+              <AnimatePresence>
+                {isUserDropdownOpen && (
+                  <>
+                    {/* Backdrop cover for easy click to dismiss */}
+                    <div 
+                      className="fixed inset-0 z-40 cursor-default" 
+                      onClick={() => setIsUserDropdownOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50 text-left overflow-hidden"
+                    >
+                      <div className="p-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserDropdownOpen(false);
+                            setIsLogoutConfirmOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left font-sans"
+                        >
+                          <LogOut className="h-4 w-4 shrink-0" />
+                          <span>Log out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Mobile Navigation bar */}
+        <div className="md:hidden border-t border-slate-100 px-4 py-2.5 bg-slate-50/95 flex items-center justify-around">
+          <button
+            onClick={() => setActiveNavItem('Order management')}
+            className={`
+              flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-150 cursor-pointer text-[10px] font-bold
+              ${activeNavItem === 'Order management' ? 'text-brand-600' : 'text-slate-500 hover:text-slate-800'}
+            `}
+          >
+            <ClipboardList className="h-5 w-5" />
+            <span>Orders</span>
+          </button>
+          <button
+            onClick={() => setActiveNavItem('Purchase order')}
+            className={`
+              flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-150 cursor-pointer text-[10px] font-bold
+              ${activeNavItem === 'Purchase order' ? 'text-brand-600' : 'text-slate-500 hover:text-slate-800'}
+            `}
+          >
+            <Inbox className="h-5 w-5" />
+            <span>WRO</span>
+          </button>
+          <button
+            onClick={() => setActiveNavItem('Product')}
+            className={`
+              flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-150 cursor-pointer text-[10px] font-bold
+              ${activeNavItem === 'Product' ? 'text-brand-600' : 'text-slate-500 hover:text-slate-800'}
+            `}
+          >
+            <Shirt className="h-5 w-5" />
+            <span>Product</span>
+          </button>
+        </div>
+      </header>
+
+      {/* MAIN PANEL - Full width content container inside matching light gray canvas */}
       <main className="flex-1 p-4 lg:p-6 flex flex-col gap-6 overflow-hidden max-w-full w-full">
         
         {/* Soft Toast Notification Animation Handler */}
@@ -4797,30 +4812,30 @@ export default function App() {
               <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
                 {/* Information cards group */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Customer</span>
-                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.customer || 'No customer'}</span>
+                  <div className="bg-slate-100/60 p-3 rounded-lg border border-slate-200">
+                    <span className="block text-xs font-semibold text-slate-500">Customer</span>
+                    <span className="text-sm font-bold text-slate-900 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.customer || 'No customer'}</span>
                   </div>
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Total quantity</span>
-                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 font-mono font-bold">
+                  <div className="bg-slate-100/60 p-3 rounded-lg border border-slate-200">
+                    <span className="block text-xs font-semibold text-slate-500">Total quantity</span>
+                    <span className="text-sm font-bold text-slate-900 block mt-1.5 font-mono">
                       {selectedPODetail.items ? selectedPODetail.items.reduce((sum, item) => sum + item.qty, 0) : 0} items
                     </span>
                   </div>
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Shipping carrier</span>
-                    <span className="text-sm font-semibold text-slate-800 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.shippingCarrier}</span>
+                  <div className="bg-slate-100/60 p-3 rounded-lg border border-slate-200">
+                    <span className="block text-xs font-semibold text-slate-500">Shipping carrier</span>
+                    <span className="text-sm font-bold text-slate-900 block mt-1.5 text-ellipsis overflow-hidden">{selectedPODetail.shippingCarrier}</span>
                   </div>
-                  <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                    <span className="block text-xs font-medium text-slate-400">Status</span>
+                  <div className="bg-slate-100/60 p-3 rounded-lg border border-slate-200">
+                    <span className="block text-xs font-semibold text-slate-500">Status</span>
                     <div className="mt-1.5">
                       {selectedPODetail.orderStatus === 'Pending' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 border border-amber-100 text-amber-600 animate-in fade-in zoom-in duration-200">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 border border-amber-200 text-amber-700 animate-in fade-in zoom-in duration-200">
                           Pending
                         </span>
                       )}
                       {selectedPODetail.orderStatus === 'Received' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-600 animate-in fade-in zoom-in duration-200">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 animate-in fade-in zoom-in duration-200">
                           Received
                         </span>
                       )}
@@ -4829,10 +4844,10 @@ export default function App() {
                 </div>
 
                 {/* Tracking input visual detail */}
-                <div className="p-3 bg-slate-50/30 border border-slate-100 rounded-lg flex items-center justify-between text-xs font-sans animate-in fade-in slide-in-from-top-1 duration-200">
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <span className="text-xs font-medium text-slate-400">Tracking:</span>
-                    <span className="font-mono text-xs font-semibold text-slate-755 select-all ml-1">{selectedPODetail.tracking}</span>
+                <div className="p-3 bg-slate-100/60 border border-slate-200 rounded-lg flex items-center justify-between text-xs font-sans animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="flex items-center gap-1.5 text-slate-600">
+                    <span className="text-xs font-semibold text-slate-500">Tracking:</span>
+                    <span className="font-mono text-xs font-bold text-slate-800 select-all ml-1">{selectedPODetail.tracking}</span>
                   </div>
                   <button
                     type="button"
@@ -4925,7 +4940,7 @@ export default function App() {
                     setSelectedPODetail(null);
                     setIsEditingWroNo(false);
                   }}
-                  className="px-4.5 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold transition duration-150 cursor-pointer shadow-sm font-sans"
+                  className="px-4.5 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold transition duration-150 cursor-pointer font-sans"
                 >
                   Close
                 </button>
