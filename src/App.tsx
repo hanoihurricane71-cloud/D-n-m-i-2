@@ -599,9 +599,11 @@ export default function App() {
   }, [selectedOrderDetail?.id]);
 
   const [isDetailActionsOpen, setIsDetailActionsOpen] = useState(false);
+  const [detailMenuTab, setDetailMenuTab] = useState<'main' | 'status' | 'shipping'>('main');
 
   useEffect(() => {
     setIsDetailActionsOpen(false);
+    setDetailMenuTab('main');
   }, [selectedOrderDetail?.id]);
 
   const handleUpdateShippingMethod = (newMethod: string) => {
@@ -5809,11 +5811,21 @@ export default function App() {
               className="w-full max-w-[1200px] bg-white rounded-2xl border border-slate-100 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between">
+              <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Order Details</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                  <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline gap-1.5 text-xs text-slate-500">
+                      <button 
+                        type="button"
+                        onClick={() => setIsOrderDetailOpen(false)}
+                        className="font-medium hover:text-brand-600 transition cursor-pointer self-baseline"
+                      >
+                        Manage orders
+                      </button>
+                      <span className="text-slate-300 select-none">/</span>
+                      <span className="font-semibold text-slate-800">Order details</span>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ml-1 self-center ${
                       selectedOrderDetail.destinationType === 'International'
                         ? 'bg-amber-100 text-amber-800 border border-amber-200'
                         : 'bg-slate-100 text-slate-800 border border-slate-200'
@@ -5863,82 +5875,171 @@ export default function App() {
                           className="fixed inset-0 z-30 cursor-default animate-none" 
                           onClick={() => setIsDetailActionsOpen(false)} 
                         />
-                        <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-40 py-2 text-left font-sans animate-fade-in divide-y divide-slate-100">
-                          {/* Update Order Status */}
-                          <div className="py-1">
-                            <span className="block px-4 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Update Order Status</span>
-                            {['New', 'In Production', 'Shipped', 'On Hold', 'Rejected', 'Cancelled'].map((status) => (
+                        <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-100 rounded-xl shadow-xl z-40 py-2 text-left font-sans animate-fade-in divide-y divide-slate-100/60 max-h-[70vh] overflow-y-auto">
+                          {detailMenuTab === 'main' && (
+                            <>
+                              {/* Update Order Status */}
                               <button
-                                key={status}
+                                type="button"
+                                onClick={() => setDetailMenuTab('status')}
+                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-100/60"
+                              >
+                                <div className="flex flex-col text-left">
+                                  <span className="text-xs font-bold text-slate-800">Update order status</span>
+                                  <span className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Current: <span className="text-brand-600 font-semibold">{selectedOrderDetail.orderStatus}</span></span>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                              </button>
+
+                              {/* Change Shipping Method */}
+                              <button
+                                type="button"
+                                onClick={() => setDetailMenuTab('shipping')}
+                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-100/60"
+                              >
+                                <div className="flex flex-col text-left">
+                                  <span className="text-xs font-bold text-slate-800">Change shipping method</span>
+                                  <span className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Current: <span className="text-slate-600 font-semibold">{selectedOrderDetail.shippingMethod}</span></span>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                              </button>
+
+                              {/* Generate Shipping Label */}
+                              <button
                                 type="button"
                                 onClick={() => {
                                   setIsDetailActionsOpen(false);
-                                  handleUpdateOrderStatus(status);
+                                  triggerToast('Generating label for order...', 'info');
+                                  setTimeout(() => {
+                                    handleUpdateShippingLabel();
+                                  }, 1000);
                                 }}
-                                className={`w-full flex items-center justify-between px-4 py-2 text-xs font-semibold ${
-                                  selectedOrderDetail.orderStatus === status 
-                                    ? 'bg-brand-50 text-brand-750' 
-                                    : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-100/60"
                               >
-                                <span>{status}</span>
-                                {selectedOrderDetail.orderStatus === status && <Check className="h-3.5 w-3.5 text-brand-600" />}
+                                <div className="flex flex-col text-left">
+                                  <span className="text-xs font-bold text-slate-800">Generate Shipping Label</span>
+                                  <span className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Register shipment & build sticker</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Printer className="h-3.5 w-3.5 text-slate-550 shrink-0" />
+                                  <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                                </div>
                               </button>
-                            ))}
-                          </div>
 
-                          {/* Edit Shipping Method */}
-                          <div className="py-1">
-                            <span className="block px-4 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Change Shipping Method</span>
-                            {['UPS Ground', 'FedEx Express', 'DHL Worldwide', 'USPS Priority'].map((method) => (
+                              {/* Delete Order */}
                               <button
-                                key={method}
                                 type="button"
                                 onClick={() => {
                                   setIsDetailActionsOpen(false);
-                                  handleUpdateShippingMethod(method);
+                                  setOrderToDelete(selectedOrderDetail);
                                 }}
-                                className={`w-full flex items-center justify-between px-4 py-2 text-xs font-semibold ${
-                                  selectedOrderDetail.shippingMethod === method 
-                                    ? 'bg-brand-50 text-brand-750' 
-                                    : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-rose-50/70 transition"
                               >
-                                <span>{method}</span>
-                                {selectedOrderDetail.shippingMethod === method && <Check className="h-3.5 w-3.5 text-brand-600" />}
+                                <div className="flex flex-col text-left">
+                                  <span className="text-xs font-bold text-rose-600">Delete Order</span>
+                                  <span className="text-[10px] text-rose-450 font-medium leading-tight mt-0.5">Permanently purge tracking history</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Trash2 className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                                  <ChevronRight className="h-4 w-4 text-rose-400 shrink-0" />
+                                </div>
                               </button>
-                            ))}
-                          </div>
+                            </>
+                          )}
 
-                          {/* Order Actions */}
-                          <div className="py-1.5 px-1 bg-slate-50/40">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsDetailActionsOpen(false);
-                                triggerToast('Generating label for order...', 'info');
-                                setTimeout(() => {
-                                  handleUpdateShippingLabel();
-                                }, 1000);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-left"
-                            >
-                              <Printer className="h-3.5 w-3.5 text-slate-550 shrink-0" />
-                              <span>Generate Shipping Label</span>
-                            </button>
+                          {detailMenuTab === 'status' && (
+                            <div className="flex flex-col">
+                              <button
+                                type="button"
+                                onClick={() => setDetailMenuTab('main')}
+                                className="w-full flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold text-brand-700 hover:bg-brand-50/40 transition cursor-pointer sticky top-0"
+                              >
+                                <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
+                                <span>Back to Main Options</span>
+                              </button>
+                              
+                              <div className="py-1">
+                                {[
+                                  { name: 'New', desc: 'Set order as newly registered' },
+                                  { name: 'In Production', desc: 'Move to packing & manufacturing' },
+                                  { name: 'Shipped', desc: 'Mark package as handed off' },
+                                  { name: 'On Hold', desc: 'Put under temporary review hold' },
+                                  { name: 'Rejected', desc: 'Reject due to item error' },
+                                  { name: 'Cancelled', desc: 'Cancel order permanently' }
+                                ].map((item) => (
+                                  <button
+                                    key={item.name}
+                                    type="button"
+                                    onClick={() => {
+                                      setIsDetailActionsOpen(false);
+                                      setDetailMenuTab('main');
+                                      handleUpdateOrderStatus(item.name);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors border-b border-slate-100/50 last:border-b-0 ${
+                                      selectedOrderDetail.orderStatus === item.name 
+                                        ? 'bg-brand-50/70 text-brand-850' 
+                                        : 'text-slate-705 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <div className="flex flex-col text-left">
+                                      <span className={`text-xs font-bold ${selectedOrderDetail.orderStatus === item.name ? 'text-brand-800' : 'text-slate-800'}`}>{item.name}</span>
+                                      <span className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">{item.desc}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      {selectedOrderDetail.orderStatus === item.name && <Check className="h-3.5 w-3.5 text-brand-600 mr-1" />}
+                                      <ChevronRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsDetailActionsOpen(false);
-                                setOrderToDelete(selectedOrderDetail);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-rose-500 shrink-0" />
-                              <span>Delete Order</span>
-                            </button>
-                          </div>
+                          {detailMenuTab === 'shipping' && (
+                            <div className="flex flex-col">
+                              <button
+                                type="button"
+                                onClick={() => setDetailMenuTab('main')}
+                                className="w-full flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold text-brand-700 hover:bg-brand-50/40 transition cursor-pointer sticky top-0"
+                              >
+                                <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
+                                <span>Back to Main Options</span>
+                              </button>
+                              
+                              <div className="py-1">
+                                {[
+                                  { name: 'UPS Ground', desc: 'Deliver using UPS Ground standard' },
+                                  { name: 'FedEx Express', desc: 'Deliver using FedEx fast option' },
+                                  { name: 'DHL Worldwide', desc: 'Deliver using supreme DHL parcel' },
+                                  { name: 'USPS Priority', desc: 'Deliver using local priority option' }
+                                ].map((item) => (
+                                  <button
+                                    key={item.name}
+                                    type="button"
+                                    onClick={() => {
+                                      setIsDetailActionsOpen(false);
+                                      setDetailMenuTab('main');
+                                      handleUpdateShippingMethod(item.name);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors border-b border-slate-100/50 last:border-b-0 ${
+                                      selectedOrderDetail.shippingMethod === item.name 
+                                        ? 'bg-brand-50/70 text-brand-850' 
+                                        : 'text-slate-705 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <div className="flex flex-col text-left">
+                                      <span className={`text-xs font-bold ${selectedOrderDetail.shippingMethod === item.name ? 'text-brand-800' : 'text-slate-800'}`}>{item.name}</span>
+                                      <span className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">{item.desc}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      {selectedOrderDetail.shippingMethod === item.name && <Check className="h-3.5 w-3.5 text-brand-600 mr-1" />}
+                                      <ChevronRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}

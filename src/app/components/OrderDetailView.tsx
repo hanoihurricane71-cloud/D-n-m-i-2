@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  ChevronLeft, ChevronRight, ChevronDown, Copy, Printer, Eye, ShoppingCart, Package, MapPin, FileText, ClipboardList, MessageSquare 
+  ChevronLeft, ChevronRight, ChevronDown, Copy, Printer, Eye, ShoppingCart, Package, MapPin, FileText, ClipboardList, MessageSquare, ArrowLeft
 } from "lucide-react";
 import { OrderManagementItem } from "../types";
 
@@ -148,6 +148,51 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
   const [isPrintDropdownOpen, setIsPrintDropdownOpen] = useState(false);
   const [submenu, setSubmenu] = useState<'main' | 'status' | 'shipping'>('main');
 
+  // Return Address Editing States
+  const [isEditingReturnAddress, setIsEditingReturnAddress] = useState(false);
+  const [returnName, setReturnName] = useState("");
+  const [returnCompanyLine, setReturnCompanyLine] = useState("");
+  const [returnAddressLine, setReturnAddressLine] = useState("");
+  const [returnCityStateZip, setReturnCityStateZip] = useState("");
+
+  const handleSaveReturnAddress = () => {
+    if (!selectedOrderDetail) return;
+    const updatedReturnAddress = {
+      name: returnName,
+      companyLine: returnCompanyLine,
+      addressLine: returnAddressLine,
+      cityStateZip: returnCityStateZip
+    };
+
+    const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newAct = {
+      id: `act_${Date.now()}`,
+      date: nowStr,
+      action: `Return address updated to "${returnName}, ${returnAddressLine}"`,
+      performedBy: 'Hiep Admin'
+    };
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === selectedOrderDetail.id) {
+        return {
+          ...o,
+          returnAddress: updatedReturnAddress,
+          activityHistory: [newAct, ...(o.activityHistory || [])]
+        };
+      }
+      return o;
+    }));
+
+    setSelectedOrderDetail(prev => prev ? {
+      ...prev,
+      returnAddress: updatedReturnAddress,
+      activityHistory: [newAct, ...(prev.activityHistory || [])]
+    } : null);
+
+    setIsEditingReturnAddress(false);
+    triggerToast('Return address updated successfully!', 'success');
+  };
+
   const scrollToTimeline = () => {
     const el = document.getElementById("order-timeline-section");
     if (el) {
@@ -173,19 +218,30 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-[600px] w-full font-sans">
-      {/* Breadcrumbs */}
-      <div className="text-xs text-slate-400 font-medium mb-3 flex items-center gap-1.5 select-none text-left">
+      {/* Breadcrumbs & Back Button */}
+      <div className="flex items-center gap-3 mb-3 text-left">
         <button
           type="button"
-          onClick={() => {
-            setIsOrderDetailOpen(false);
-          }}
-          className="hover:text-slate-700 transition font-semibold"
+          onClick={() => setIsOrderDetailOpen(false)}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-all cursor-pointer shadow-3xs"
         >
-          Manage orders
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back</span>
         </button>
-        <span className="text-slate-300">/</span>
-        <span className="text-slate-600 font-semibold">Order details</span>
+        <span className="text-slate-200">|</span>
+        <div className="text-xs text-slate-400 font-medium flex items-baseline gap-1.5 select-none">
+          <button
+            type="button"
+            onClick={() => {
+              setIsOrderDetailOpen(false);
+            }}
+            className="hover:text-slate-700 transition font-semibold"
+          >
+            Manage orders
+          </button>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-600 font-semibold">Order details</span>
+        </div>
       </div>
 
       {/* Top Header Row with status & destination badges */}
@@ -236,46 +292,27 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
             {isActionsDropdownOpen && (
               <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-white border border-slate-200 rounded-xl shadow-xl py-2 px-2 text-left animate-in fade-in slide-in-from-top-2 duration-150">
                 {submenu === 'main' && (
-                  <div className="space-y-1">
+                  <div className="flex flex-col">
                     <button
                       type="button"
                       onClick={() => setSubmenu('status')}
                       className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-md transition cursor-pointer flex items-center justify-between pointer-events-auto"
                     >
                       <span>Update Order Status</span>
-                      <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        ({selectedOrderDetail.orderStatus || 'New'})
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
                     </button>
 
+                    <div className="border-t border-slate-100 my-1.5" />
                     <button
                       type="button"
-                      onClick={() => setSubmenu('shipping')}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-md transition cursor-pointer flex items-center justify-between pointer-events-auto"
+                      onClick={() => {
+                        setIsActionsDropdownOpen(false);
+                        onCreateLabel(selectedOrderDetail);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-brand-600 hover:bg-brand-50 rounded-md transition cursor-pointer pointer-events-auto"
                     >
-                      <span>Change Shipping Method</span>
-                      <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        ({selectedOrderDetail.shippingMethod || 'None'})
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </span>
+                      Create Shipping Label
                     </button>
-
-                    {!selectedOrderDetail.shipmentInfo && (
-                      <>
-                        <div className="border-t border-slate-100 my-1" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsActionsDropdownOpen(false);
-                            onCreateLabel(selectedOrderDetail);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-brand-600 hover:bg-brand-50 rounded-md transition cursor-pointer pointer-events-auto"
-                        >
-                          Create Shipping Label
-                        </button>
-                      </>
-                    )}
                   </div>
                 )}
 
@@ -426,226 +463,96 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
 
             {/* Section 2: Shipment Card */}
             <div>
-              {selectedOrderDetail.shipmentInfo ? (
-                <div className="border border-slate-200 rounded-xl bg-white shadow-xs overflow-hidden">
-                  {/* Card Header exactly matching the screenshot style */}
-                  <div className="px-5 py-4 border-b border-slate-100 bg-white flex items-center justify-between select-none">
-                    <span className="font-bold text-slate-800 text-sm tracking-wider uppercase select-none">
-                      Shipment 1 - {selectedOrderDetail.shipmentInfo.trackingNumber || '12391283912'}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="relative inline-block text-left">
-                        <button
-                          type="button"
-                          onClick={() => setIsPrintDropdownOpen(!isPrintDropdownOpen)}
-                          className="h-8 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 bg-white font-bold rounded-lg text-xs shadow-2xs transition focus:outline-none cursor-pointer inline-flex items-center gap-1 select-none"
-                        >
-                          <span>Print</span>
-                          <ChevronDown className="h-3 w-3 text-slate-500" />
-                        </button>
-
-                        {isPrintDropdownOpen && (
-                          <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1.5 z-50 text-xs animate-in fade-in duration-100">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPrintDropdownOpen(false);
-                                const printWindow = window.open('', '_blank');
-                                if (printWindow) {
-                                  printWindow.document.write(`
-                                    <html>
-                                      <head>
-                                        <title>Print Shipping Label *(1Z) ${selectedOrderDetail.shipmentInfo?.trackingNumber || '1LSDBVU000ZLLNI'}*</title>
-                                        <style>
-                                          body {
-                                            margin: 0;
-                                            display: flex;
-                                            justify-content: center;
-                                            align-items: center;
-                                            height: 100vh;
-                                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                                            background-color: #f1f5f9;
-                                          }
-                                          .label-card {
-                                            width: 4in;
-                                            height: 6in;
-                                            border: 3px solid #000;
-                                            padding: 20px;
-                                            box-sizing: border-box;
-                                            display: flex;
-                                            flex-direction: column;
-                                            justify-content: space-between;
-                                            background-color: #fff;
-                                          }
-                                          .header {
-                                            font-size: 22px;
-                                            font-weight: 900;
-                                            border-bottom: 5px solid #000;
-                                            padding-bottom: 6px;
-                                            text-transform: uppercase;
-                                          }
-                                          .address-section {
-                                            font-size: 11px;
-                                            font-weight: 650;
-                                            line-height: 1.4;
-                                          }
-                                          .barcode {
-                                            display: flex;
-                                            flex-direction: column;
-                                            align-items: center;
-                                            border-top: 3px solid #000;
-                                            padding-top: 15px;
-                                          }
-                                          .barcode-lines {
-                                            width: 100%;
-                                            height: 80px;
-                                            background: repeating-linear-gradient(90deg, #000, #000 3px, #fff 3px, #fff 8px);
-                                          }
-                                          .barcode-text {
-                                            font-family: monospace;
-                                            font-size: 13px;
-                                            font-weight: 900;
-                                            margin-top: 5px;
-                                            letter-spacing: 2px;
-                                          }
-                                        </style>
-                                      </head>
-                                      <body>
-                                        <div class="label-card">
-                                          <div class="header">
-                                            ${selectedOrderDetail.shippingMethod || 'UPS Ground'} / DOMESTIC
-                                          </div>
-                                          <div class="address-section">
-                                            <strong>FROM:</strong><br/>
-                                            ${selectedOrderDetail.shipmentInfo?.senderDetails?.company || 'SwiftPOD LLC'}<br/>
-                                            ${selectedOrderDetail.shipmentInfo?.senderDetails?.address || '2070 S 7th St. Ste E, San Jose, CA 95112'}
-                                          </div>
-                                          <div class="address-section">
-                                            <strong>TO:</strong><br/>
-                                            ${selectedOrderDetail.shipmentInfo?.recipientDetails ? `${selectedOrderDetail.shipmentInfo.recipientDetails.firstName} ${selectedOrderDetail.shipmentInfo.recipientDetails.lastName}` : (selectedOrderDetail.shipAddress?.name || 'Demi Wilkinson')}<br/>
-                                            ${selectedOrderDetail.shipmentInfo?.recipientDetails?.company || selectedOrderDetail.shipAddress?.companyLine || ''}<br/>
-                                            ${selectedOrderDetail.shipmentInfo?.recipientDetails?.address1 || selectedOrderDetail.shipAddress?.addressLine || ''}<br/>
-                                            ${(selectedOrderDetail.shipmentInfo?.recipientDetails?.city || selectedOrderDetail.shipAddress?.city || '').toUpperCase()}, ${selectedOrderDetail.shipmentInfo?.recipientDetails?.zip || selectedOrderDetail.shipAddress?.zip || ''}
-                                          </div>
-                                          <div class="barcode">
-                                            <div class="barcode-lines"></div>
-                                            <div class="barcode-text">*(1Z) ${selectedOrderDetail.shipmentInfo?.trackingNumber || '1LSDBVU000ZLLNI'}*</div>
-                                          </div>
-                                        </div>
-                                        <script>
-                                          window.onload = function() {
-                                            window.print();
-                                            setTimeout(function() { window.close(); }, 1500);
-                                          };
-                                        </script>
-                                      </body>
-                                    </html>
-                                  `);
-                                  printWindow.document.close();
-                                } else {
-                                  triggerToast('Popup blocked! Please allow popups to print.', 'info');
-                                }
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 font-semibold text-slate-700 block"
-                            >
-                              Print Label
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPrintDropdownOpen(false);
-                                triggerToast('Printing packing slip...', 'success');
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 font-semibold text-slate-700 block"
-                            >
-                              Packing Slip
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPrintDropdownOpen(false);
-                                triggerToast('Printing thank you card...', 'success');
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 font-semibold text-slate-700 block"
-                            >
-                              Thank You Card
-                            </button>
+              {(() => {
+                const shipmentsList = selectedOrderDetail.shipments && selectedOrderDetail.shipments.length > 0
+                  ? selectedOrderDetail.shipments
+                  : (selectedOrderDetail.shipmentInfo ? [selectedOrderDetail.shipmentInfo] : []);
+                
+                if (shipmentsList.length > 0) {
+                  return (
+                    <div className="space-y-4">
+                      {shipmentsList.map((shp, idx) => (
+                        <div key={shp.trackingNumber} className="border border-slate-200 rounded-xl bg-white shadow-xs overflow-hidden">
+                          {/* Card Header exactly matching the screenshot style */}
+                          <div className="px-5 py-3.5 border-b border-slate-100 bg-white flex items-center justify-between select-none">
+                            <span className="font-bold text-slate-800 text-sm tracking-wider uppercase select-none">
+                              Shipment {idx + 1} - {shp.trackingNumber || '12391283912'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onCreateLabel(selectedOrderDetail)}
+                                className="h-8 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 bg-white font-bold rounded-lg text-xs shadow-2xs transition focus:outline-none cursor-pointer inline-flex items-center select-none"
+                              >
+                                View details
+                              </button>
+                            </div>
                           </div>
-                        )}
-                      </div>
+
+                          {/* Info Grid - Styled exactly as 3 columns layout in the screenshot */}
+                          <div className="p-5 flex flex-col md:flex-row md:items-stretch gap-6 text-left">
+                            {/* Information Columns */}
+                            <div className="flex-1 grid grid-cols-3 gap-y-5 gap-x-6">
+                              <div>
+                                <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Tracking</span>
+                                <span className="text-sm font-semibold text-slate-800 mt-1 block font-mono select-all tracking-tight leading-none text-wrap break-all">{shp.trackingNumber || '1LSDBVU000ZLLNI'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Status</span>
+                                <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{shp.shippingMethod || 'FLAT'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Service</span>
+                                <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{shp.service || 'USPS'}</span>
+                              </div>
+
+                              <div>
+                                <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Size (inch)</span>
+                                <span className="text-sm font-medium font-mono text-slate-800 mt-1 block leading-none">{shp.size || '15 × 12 × 10'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Weight</span>
+                                <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{shp.weight || '12.4 lbs'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Price</span>
+                                <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{shp.price || '$7.22'}</span>
+                              </div>
+                            </div>
+
+                            {/* Highlighted Number of item section as requested */}
+                            <div 
+                              className="md:w-36 border border-slate-200 rounded-xl p-3 bg-slate-50/80 shadow-2xs relative select-none flex flex-col items-center justify-center min-h-[90px]"
+                            >
+                              <span className="block text-xs font-semibold text-slate-500 font-sans leading-none text-center">
+                                Number of items
+                              </span>
+                              <span className="text-xl font-extrabold text-slate-800 mt-2 block font-mono leading-none">
+                                {selectedOrderDetail.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || selectedOrderDetail.quantity}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="border border-slate-200 rounded-xl bg-white p-5 space-y-3">
+                      <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider select-none">
+                        <span>Shipment</span>
+                      </h4>
                       <button
                         type="button"
-                        onClick={() => setIsShipmentDetailsModalOpen(true)}
-                        className="h-8 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 bg-white font-bold rounded-lg text-xs shadow-2xs transition focus:outline-none cursor-pointer inline-flex items-center select-none"
+                        onClick={() => onCreateLabel(selectedOrderDetail)}
+                        className="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-brand-100"
                       >
-                        View details
+                        Create Shipping Label
                       </button>
                     </div>
-                  </div>
-
-                  {/* Info Grid - Styled exactly as 3 columns layout in the screenshot */}
-                  <div className="p-5 flex flex-col md:flex-row md:items-stretch gap-6 text-left">
-                    {/* Information Columns */}
-                    <div className="flex-1 grid grid-cols-3 gap-y-5 gap-x-6">
-                      <div>
-                        <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Tracking</span>
-                        <span className="text-sm font-semibold text-slate-800 mt-1 block font-mono select-all tracking-tight leading-none">{selectedOrderDetail.shipmentInfo.trackingNumber || '1LSDBVU000ZLLNI'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Status</span>
-                        <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{selectedOrderDetail.shipmentInfo.shippingMethod || 'FLAT'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Service</span>
-                        <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{selectedOrderDetail.shipmentInfo.service || 'USPS'}</span>
-                      </div>
-
-                      <div>
-                        <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Size (inch)</span>
-                        <span className="text-sm font-medium font-mono text-slate-800 mt-1 block leading-none">{selectedOrderDetail.shipmentInfo.size || '15 × 12 × 10'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Weight</span>
-                        <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{selectedOrderDetail.shipmentInfo.weight || '12.4 lbs'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-slate-500 font-sans select-none">Price</span>
-                        <span className="text-sm font-medium text-slate-800 mt-1 block font-sans leading-none">{selectedOrderDetail.shipmentInfo.price || '$7.22'}</span>
-                      </div>
-                    </div>
-
-                    {/* Highlighted Number of item section as requested */}
-                    <div 
-                      onClick={() => setIsShipmentItemsModalOpen(true)}
-                      className="md:w-36 border border-slate-200 rounded-xl p-3 bg-slate-50/80 hover:bg-slate-100 transition duration-150 cursor-pointer shadow-2xs relative select-none flex flex-col items-center justify-center min-h-[90px]"
-                      title="Click to view items list"
-                    >
-                      <span className="block text-xs font-semibold text-slate-500 font-sans leading-none text-center">
-                        Number of items
-                      </span>
-                      <span className="text-xl font-extrabold text-slate-800 mt-2 block font-mono leading-none">
-                        {selectedOrderDetail.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || selectedOrderDetail.quantity}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="border border-slate-200 rounded-xl bg-white p-5 space-y-4">
-                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider select-none">
-                    <span>Courier Shipment Label</span>
-                  </h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    No active shipping label has been generated for this client order in SwiftPOD yet. Click below to configure parameters and register package details to generate a tracking code.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => onCreateLabel(selectedOrderDetail)}
-                    className="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-brand-100"
-                  >
-                    Create Shipping Label
-                  </button>
-                </div>
-              )}
+                  );
+                }
+              })()}
             </div>
 
             {/* Section 3: Notes & Timeline */}
@@ -708,8 +615,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                 </div>
 
                 {/* Timeline */}
-                <div className="pt-3">
-                  <span className="block text-xs font-semibold text-slate-500 mb-4 select-none">Complete History Path</span>
+                <div className="pt-1">
                   <div className="relative border-l-2 border-slate-100 ml-2 pl-4 space-y-4 py-1 text-left">
                     {selectedOrderDetail.activityHistory && selectedOrderDetail.activityHistory.length > 0 ? (
                       selectedOrderDetail.activityHistory.map((act) => (
@@ -798,20 +704,105 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                 </span>
               </div>
 
-              <div className="p-5 space-y-4 divide-y divide-slate-100 text-left">
+              <div className="p-5 text-left">
                 {/* Return Address */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-slate-500 font-sans select-none">Return Address</h4>
-                  <div className="text-slate-800 space-y-0.5 font-sans leading-relaxed text-sm font-medium">
-                    <p className="font-bold text-slate-900">{selectedOrderDetail.returnAddress?.name || 'mytest'}</p>
-                    <p>{selectedOrderDetail.returnAddress?.companyLine || 'Company_address-1'}</p>
-                    <p>{selectedOrderDetail.returnAddress?.addressLine || '715 Broadway2313, United States,'}</p>
-                    <p>{selectedOrderDetail.returnAddress?.cityStateZip || 'NY, 20912, US'}</p>
+                  <div className="flex items-center justify-between font-sans">
+                    <h4 className="text-xs font-semibold text-slate-500 font-sans select-none">Return Address</h4>
+                    {!isEditingReturnAddress ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rAddr = selectedOrderDetail.returnAddress || {
+                            name: 'mytest',
+                            companyLine: 'Company_address-1',
+                            addressLine: '715 Broadway2313, United States,',
+                            cityStateZip: 'NY, 20912, US'
+                          };
+                          setReturnName(rAddr.name || '');
+                          setReturnCompanyLine(rAddr.companyLine || '');
+                          setReturnAddressLine(rAddr.addressLine || '');
+                          setReturnCityStateZip(rAddr.cityStateZip || '');
+                          setIsEditingReturnAddress(true);
+                        }}
+                        className="text-xs font-semibold text-brand-650 hover:text-brand-850 transition cursor-pointer"
+                      >
+                        Edit Address
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingReturnAddress(false)}
+                          className="text-xs font-semibold text-slate-500 hover:text-slate-705 transition cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <span className="text-slate-300 text-xs">|</span>
+                        <button
+                          type="button"
+                          onClick={handleSaveReturnAddress}
+                          className="text-xs font-bold text-brand-650 hover:text-brand-700 transition cursor-pointer"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    )}
                   </div>
+
+                  {!isEditingReturnAddress ? (
+                    <div className="text-slate-800 space-y-0.5 font-sans leading-relaxed text-sm font-medium">
+                      <p className="font-bold text-slate-900">{selectedOrderDetail.returnAddress?.name || 'mytest'}</p>
+                      <p>{selectedOrderDetail.returnAddress?.companyLine || 'Company_address-1'}</p>
+                      <p>{selectedOrderDetail.returnAddress?.addressLine || '715 Broadway2313, United States,'}</p>
+                      <p>{selectedOrderDetail.returnAddress?.cityStateZip || 'NY, 20912, US'}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pt-1 font-sans text-left text-xs">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Company / Name</label>
+                        <input
+                          type="text"
+                          value={returnName}
+                          onChange={(e) => setReturnName(e.target.value)}
+                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Company (Optional)</label>
+                        <input
+                          type="text"
+                          value={returnCompanyLine}
+                          onChange={(e) => setReturnCompanyLine(e.target.value)}
+                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Address line</label>
+                        <input
+                          type="text"
+                          value={returnAddressLine}
+                          onChange={(e) => setReturnAddressLine(e.target.value)}
+                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">City, State, Zip, Country</label>
+                        <input
+                          type="text"
+                          value={returnCityStateZip}
+                          onChange={(e) => setReturnCityStateZip(e.target.value)}
+                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                <div className="border-t border-slate-100 my-9" />
+
                 {/* Ship Address */}
-                <div className="pt-3 space-y-2 text-left">
+                <div className="space-y-2 text-left">
                   <div className="flex items-center justify-between font-sans">
                     <h4 className="text-xs font-semibold text-slate-500 font-sans select-none">Ship Address</h4>
                     {!isEditingShipAddress ? (
@@ -885,7 +876,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                       {selectedOrderDetail.shipAddress?.email ? <p>{selectedOrderDetail.shipAddress.email}</p> : null}
                     </div>
                   ) : (
-                    <div className="space-y-3 pt-1 font-sans text-left">
+                    <div className="space-y-4 pt-1 font-sans text-left">
                       {isPasteAddressOpen ? (
                         <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-2.5 space-y-2">
                           <h5 className="text-xs font-bold text-blue-800">Paste Address Block</h5>
@@ -943,49 +934,126 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                         </div>
                       )}
 
-                      <div className="space-y-2 pb-1 text-xs">
-                        <input
-                          type="text"
-                          value={shipName}
-                          placeholder="Name *"
-                          onChange={(e) => setShipName(e.target.value)}
-                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
-                        />
-                        <input
-                          type="text"
-                          value={shipCompanyLine}
-                          placeholder="Company"
-                          onChange={(e) => setShipCompanyLine(e.target.value)}
-                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
-                        />
-                        <input
-                          type="text"
-                          value={shipAddressLine}
-                          placeholder="Address line 1 *"
-                          onChange={(e) => setShipAddressLine(e.target.value)}
-                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
-                        />
-                        <input
-                          type="text"
-                          value={shipAddress2}
-                          placeholder="Address line 2"
-                          onChange={(e) => setShipAddress2(e.target.value)}
-                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
-                        />
-                        <div className="flex gap-2">
+                      <div className="space-y-3 pb-1 text-xs">
+                        {/* Name Field */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Name <span className="text-red-500">*</span></label>
                           <input
                             type="text"
-                            value={shipCity}
-                            placeholder="City *"
-                            onChange={(e) => setShipCity(e.target.value)}
-                            className="w-1/2 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
+                            value={shipName}
+                            placeholder="Name"
+                            onChange={(e) => setShipName(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
                           />
+                        </div>
+
+                        {/* Company & Email row */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Company</label>
+                            <input
+                              type="text"
+                              value={shipCompanyLine}
+                              placeholder="Company"
+                              onChange={(e) => setShipCompanyLine(e.target.value)}
+                              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                            <input
+                              type="text"
+                              value={shipEmail}
+                              placeholder="Email"
+                              onChange={(e) => setShipEmail(e.target.value)}
+                              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Phone row */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Phone</label>
+                            <input
+                              type="text"
+                              value={shipPhone}
+                              placeholder="Phone"
+                              onChange={(e) => setShipPhone(e.target.value)}
+                              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Country Field */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Country <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={shipCountry}
+                            placeholder="Country"
+                            onChange={(e) => setShipCountry(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+
+                        {/* Address Line 1 */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Address line 1 <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={shipAddressLine}
+                            placeholder="Address line 1"
+                            onChange={(e) => setShipAddressLine(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+
+                        {/* Address Line 2 */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Address line 2</label>
+                          <input
+                            type="text"
+                            value={shipAddress2}
+                            placeholder="Address line 2"
+                            onChange={(e) => setShipAddress2(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+
+                        {/* City & State row */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">City <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={shipCity}
+                              placeholder="City"
+                              onChange={(e) => setShipCity(e.target.value)}
+                              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">ZIP / Postcode <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={shipZip}
+                              placeholder="ZIP / Postcode"
+                              onChange={(e) => setShipZip(e.target.value)}
+                              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium text-left"
+                            />
+                          </div>
+                        </div>
+
+                        {/* State selector */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">State / Province / Region</label>
                           <select
                             value={shipState}
                             onChange={(e) => setShipState(e.target.value)}
-                            className="w-1/2 text-xs text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-1 h-8 focus:outline-none cursor-pointer text-slate-700 font-sans"
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 h-9 focus:outline-none cursor-pointer text-slate-700 font-sans font-medium"
                           >
-                            <option value="">Select state</option>
+                            <option value="">Select state / province / region</option>
                             {US_STATES.map((stateOption) => (
                               <option key={stateOption.code} value={stateOption.name}>
                                 {stateOption.name}
@@ -993,41 +1061,6 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                             ))}
                           </select>
                         </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={shipZip}
-                            placeholder="Zipcode *"
-                            onChange={(e) => setShipZip(e.target.value)}
-                            className="w-1/2 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 text-center font-mono"
-                          />
-                          <input
-                            type="text"
-                            value={shipCountry}
-                            placeholder="Country *"
-                            onChange={(e) => setShipCountry(e.target.value)}
-                            className="w-1/2 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={shipPhone}
-                          placeholder="Phone"
-                          onChange={(e) => setShipPhone(e.target.value)}
-                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-8 font-sans"
-                        />
-                      </div>
-
-                      <div className="flex justify-end pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleSaveShipAddress();
-                          }}
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-[11px] cursor-pointer transition focus:outline-none uppercase tracking-wider h-8 font-sans animate-none"
-                        >
-                          Apply Save
-                        </button>
                       </div>
                     </div>
                   )}
