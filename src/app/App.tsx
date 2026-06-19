@@ -83,6 +83,7 @@ import { CreatePurchaseOrderModal } from './components/CreatePurchaseOrderModal'
 import { CreateInventoryAdditionModal } from './components/CreateInventoryAdditionModal';
 import { LabelTab } from './components/LabelTab';
 import { OrderManagementTab } from './components/OrderManagementTab';
+import { OrderDetailView } from './components/OrderDetailView';
 import { ProductTab } from './components/ProductTab';
 import { PurchaseOrderTab } from './components/PurchaseOrderTab';
 import { AdditionTab } from './components/AdditionTab';
@@ -919,6 +920,9 @@ export default function App() {
   // Selected Order Detail for Drawer
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderManagementItem | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
+  const [isAddressesExpanded, setIsAddressesExpanded] = useState(true);
+  const [isItemsExpanded, setIsItemsExpanded] = useState(true);
+  const [isShipmentExpanded, setIsShipmentExpanded] = useState(true);
   const [isLabelPopupOpen, setIsLabelPopupOpen] = useState(false);
   const [isVoidConfirmOpen, setIsVoidConfirmOpen] = useState(false);
   const [isShipmentItemsModalOpen, setIsShipmentItemsModalOpen] = useState(false);
@@ -2514,47 +2518,135 @@ export default function App() {
               triggerToast={triggerToast}
             />
           ) : activeNavItem === 'Order management' ? (
-            <OrderManagementTab
-              orderPagedItems={orderPagedItems}
-              orderTotalPages={orderTotalPages}
-              filteredOrders={filteredOrders}
-              orderSearchQuery={orderSearchQuery}
-              setOrderSearchQuery={setOrderSearchQuery}
-              orderProductQuery={orderProductQuery}
-              setOrderProductQuery={setOrderProductQuery}
-              orderStatusFilter={orderStatusFilter}
-              setOrderStatusFilter={setOrderStatusFilter}
-              orderShippingStatusFilter={orderShippingStatusFilter}
-              setOrderShippingStatusFilter={setOrderShippingStatusFilter}
-              orderShipMethodFilter={orderShipMethodFilter}
-              setOrderShipMethodFilter={setOrderShipMethodFilter}
-              orderCustomerFilter={orderCustomerFilter}
-              setOrderCustomerFilter={setOrderCustomerFilter}
-              orderDateFrom={orderDateFrom}
-              setOrderDateFrom={setOrderDateFrom}
-              orderDateTo={orderDateTo}
-              setOrderDateTo={setOrderDateTo}
-              orderStyleFilter={orderStyleFilter}
-              setOrderStyleFilter={setOrderStyleFilter}
-              orderColorFilter={orderColorFilter}
-              setOrderColorFilter={setOrderColorFilter}
-              orderSizeFilter={orderSizeFilter}
-              setOrderSizeFilter={setOrderSizeFilter}
-              orderCurrentPage={orderCurrentPage}
-              setOrderCurrentPage={setOrderCurrentPage}
-              orderPageSize={orderPageSize}
-              setOrderPageSize={setOrderPageSize}
-              isOrderPageSizeOpen={isOrderPageSizeOpen}
-              setIsOrderPageSizeOpen={setIsOrderPageSizeOpen}
-              orderDateFromRef={orderDateFromRef}
-              orderDateToRef={orderDateToRef}
-              setSelectedOrderDetail={setSelectedOrderDetail}
-              setIsOrderDetailOpen={setIsOrderDetailOpen}
-              copiedOrderId={copiedOrderId}
-              setCopiedOrderId={setCopiedOrderId}
-              triggerToast={triggerToast}
-              onUpdateOrderStatus={handleUpdateOrderStatus}
-            />
+            isOrderDetailOpen && selectedOrderDetail ? (
+              <OrderDetailView
+                selectedOrderDetail={selectedOrderDetail}
+                setSelectedOrderDetail={setSelectedOrderDetail}
+                setIsOrderDetailOpen={setIsOrderDetailOpen}
+                setOrders={setOrders}
+                triggerToast={triggerToast}
+                handleUpdateOrderStatus={handleUpdateOrderStatus}
+                onCreateLabel={(order) => {
+                  setLabelFormOrderNo(order.orderNumber || '');
+                  setLabelFormClient(order.customerStore || 'Olivia Rhye Store');
+                  setLabelFormCurrency('USD');
+                  setLabelFormFirstName(order.customerStore?.split(' ')[0] || 'Olivia');
+                  setLabelFormLastName(order.customerStore?.split(' ').slice(1).join(' ') || 'Rhye');
+                  setLabelFormCompany(order.customerStore || 'Acme Corp');
+                  setLabelFormEmail(`${order.customerStore?.toLowerCase().replace(/\s+/g, '') || 'customer'}@example.com`);
+                  setLabelFormPhone('555-019-2834');
+                  
+                  setSelectedWarehouseForLabel('Warehouse A');
+                  setSenderFirstName('Hiep');
+                  setSenderLastName('Admin');
+                  setSenderCompany('SwiftPOD LLC - Warehouse A');
+                  setSenderEmail('warehouse-a@swiftpod.live');
+                  setSenderPhone('408-555-0199');
+                  setSenderCountry('United States');
+                  setSenderAddress1('2070 S 7th St. Ste E');
+                  setSenderAddress2('');
+                  setSenderCity('San Jose');
+                  setSenderZip('95112');
+
+                  const isIntl = order.destinationType === 'International' || order.destination?.toLowerCase().includes('tokyo');
+                  setLabelFormCountry(isIntl ? 'Japan' : 'United States');
+                  setLabelFormAddress1(order.destination || '2070 S 7th St. Ste E');
+                  setLabelFormAddress2('');
+                  setLabelFormCity(isIntl ? 'Tokyo' : 'San Jose');
+                  setLabelFormZip(isIntl ? '100-0001' : '95112');
+                  
+                  setLabelFormGetRateClicked(true);
+                  setLabelFormLoadingRates(false);
+                  setLabelFormSelectedRateIndex(0);
+                  setLabelFormCarrierPackage('Package');
+                  setLabelFormPackages([{
+                    index: 1,
+                    refId: `PKG-${order.orderNumber}-${Math.floor(1000 + Math.random() * 9000)}`,
+                    savedPkg: 'Custom',
+                    weight: '47.92',
+                    length: '7.00',
+                    width: '5.05',
+                    height: '14.00',
+                    items: order.orderItems?.map(item => `${item.productName} (Qty: ${item.quantity})`) || [`Classic Crewneck Hoodie (Qty: ${order.quantity})`]
+                  }]);
+                  
+                  setIsLabelPopupOpen(true);
+                }}
+                setIsVoidConfirmOpen={setIsVoidConfirmOpen}
+                setIsShipmentDetailsModalOpen={setIsShipmentDetailsModalOpen}
+                setIsShipmentItemsModalOpen={setIsShipmentItemsModalOpen}
+                isEditingShipAddress={isEditingShipAddress}
+                setIsEditingShipAddress={setIsEditingShipAddress}
+                shipName={shipName}
+                setShipName={setShipName}
+                shipCompanyLine={shipCompanyLine}
+                setShipCompanyLine={setShipCompanyLine}
+                shipAddressLine={shipAddressLine}
+                setShipAddressLine={setShipAddressLine}
+                shipAddress2={shipAddress2}
+                setShipAddress2={setShipAddress2}
+                shipCity={shipCity}
+                setShipCity={setShipCity}
+                shipState={shipState}
+                setShipState={setShipState}
+                shipZip={shipZip}
+                setShipZip={setShipZip}
+                shipCountry={shipCountry}
+                setShipCountry={setShipCountry}
+                shipPhone={shipPhone}
+                setShipPhone={setShipPhone}
+                shipEmail={shipEmail}
+                setShipEmail={setShipEmail}
+                isPasteAddressOpen={isPasteAddressOpen}
+                setIsPasteAddressOpen={setIsPasteAddressOpen}
+                rawAddressToPaste={rawAddressToPaste}
+                setRawAddressToPaste={setRawAddressToPaste}
+                handleSaveShipAddress={handleSaveShipAddress}
+                parseUSAddress={parseUSAddress}
+              />
+            ) : (
+              <OrderManagementTab
+                orderPagedItems={orderPagedItems}
+                orderTotalPages={orderTotalPages}
+                filteredOrders={filteredOrders}
+                orderSearchQuery={orderSearchQuery}
+                setOrderSearchQuery={setOrderSearchQuery}
+                orderProductQuery={orderProductQuery}
+                setOrderProductQuery={setOrderProductQuery}
+                orderStatusFilter={orderStatusFilter}
+                setOrderStatusFilter={setOrderStatusFilter}
+                orderShippingStatusFilter={orderShippingStatusFilter}
+                setOrderShippingStatusFilter={setOrderShippingStatusFilter}
+                orderShipMethodFilter={orderShipMethodFilter}
+                setOrderShipMethodFilter={setOrderShipMethodFilter}
+                orderCustomerFilter={orderCustomerFilter}
+                setOrderCustomerFilter={setOrderCustomerFilter}
+                orderDateFrom={orderDateFrom}
+                setOrderDateFrom={setOrderDateFrom}
+                orderDateTo={orderDateTo}
+                setOrderDateTo={setOrderDateTo}
+                orderStyleFilter={orderStyleFilter}
+                setOrderStyleFilter={setOrderStyleFilter}
+                orderColorFilter={orderColorFilter}
+                setOrderColorFilter={setOrderColorFilter}
+                orderSizeFilter={orderSizeFilter}
+                setOrderSizeFilter={setOrderSizeFilter}
+                orderCurrentPage={orderCurrentPage}
+                setOrderCurrentPage={setOrderCurrentPage}
+                orderPageSize={orderPageSize}
+                setOrderPageSize={setOrderPageSize}
+                isOrderPageSizeOpen={isOrderPageSizeOpen}
+                setIsOrderPageSizeOpen={setIsOrderPageSizeOpen}
+                orderDateFromRef={orderDateFromRef}
+                orderDateToRef={orderDateToRef}
+                setSelectedOrderDetail={setSelectedOrderDetail}
+                setIsOrderDetailOpen={setIsOrderDetailOpen}
+                copiedOrderId={copiedOrderId}
+                setCopiedOrderId={setCopiedOrderId}
+                triggerToast={triggerToast}
+                onUpdateOrderStatus={handleUpdateOrderStatus}
+              />
+            )
           ) : activeNavItem === 'Product' ? (
             <ProductTab
               activeTab={activeTab}
@@ -3690,7 +3782,7 @@ export default function App() {
 
       {/* ORDER DETAIL DRAWER */}
       <AnimatePresence>
-        {isOrderDetailOpen && selectedOrderDetail && (
+        {false && isOrderDetailOpen && selectedOrderDetail && (
           <div 
             onClick={() => {
               setIsOrderDetailOpen(false);
