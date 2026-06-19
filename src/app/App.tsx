@@ -924,6 +924,10 @@ export default function App() {
   const [isItemsExpanded, setIsItemsExpanded] = useState(true);
   const [isShipmentExpanded, setIsShipmentExpanded] = useState(true);
   const [isLabelPopupOpen, setIsLabelPopupOpen] = useState(false);
+  const [isHeaderPrintDropdownOpen, setIsHeaderPrintDropdownOpen] = useState(false);
+  const [headerPrintSelection, setHeaderPrintSelection] = useState<'Label' | 'Packing Slip' | 'Thank You Card'>('Label');
+  const [shipmentTabs, setShipmentTabs] = useState<string[]>(['Shipment 1']);
+  const [activeShipmentTabIdx, setActiveShipmentTabIdx] = useState<number>(0);
   const [isVoidConfirmOpen, setIsVoidConfirmOpen] = useState(false);
   const [isShipmentItemsModalOpen, setIsShipmentItemsModalOpen] = useState(false);
   const [isShipmentDetailsModalOpen, setIsShipmentDetailsModalOpen] = useState(false);
@@ -2507,7 +2511,14 @@ export default function App() {
         </div>
 
         {/* Floating rounded central board */}
-        <div id="main-content-card" className="bg-white rounded-2xl shadow-sm border border-slate-100/90 flex flex-col">
+        <div 
+          id="main-content-card" 
+          className={
+            activeNavItem === 'Order management' && isOrderDetailOpen && selectedOrderDetail 
+              ? "flex flex-col w-full" 
+              : "bg-white rounded-2xl shadow-sm border border-slate-100/90 flex flex-col"
+          }
+        >
           
           {activeNavItem === 'Store' ? (
             <StoreManagementTab
@@ -6357,43 +6368,168 @@ export default function App() {
       {/* SHIPPING LABEL CREATION MODAL */}
       <AnimatePresence>
         {isLabelPopupOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-[100] flex items-end justify-center select-none overflow-hidden">
             {/* Modal backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsLabelPopupOpen(false)}
-              className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
  
-            {/* Modal Dialog container */}
+            {/* Elevated Full Width Bottom Sheet content panel */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.97, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.97, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100 z-50 my-8 mx-auto"
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 28, stiffness: 220 }}
+              className="relative w-full max-w-7xl h-[94vh] bg-white rounded-t-2xl shadow-2xl overflow-hidden flex flex-col border-t border-x border-slate-200 z-50 mx-auto font-sans text-xs"
             >
-              {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-2">
+              {/* Sheet Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white select-none">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
+                    <Box className="h-5 w-5" />
+                  </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">Create shipping label</h2>
-                    <p className="text-xs font-mono font-bold text-slate-500">Order: #{labelFormOrderNo}</p>
+                    <h2 className="text-base font-bold text-slate-950 flex items-center gap-2">
+                      Create shipping label
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[10px] font-mono font-bold">
+                        Order: #{labelFormOrderNo}
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">Configure package constraints and carrier specifications</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsLabelPopupOpen(false)}
-                  className="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-full transition cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+
+                {/* Header Actions: Print toggle dropdown & Close button */}
+                <div className="flex items-center gap-3">
+                  {/* Print Selector Dropdown */}
+                  <div className="relative inline-block text-left">
+                    <button
+                      type="button"
+                      onClick={() => setIsHeaderPrintDropdownOpen(!isHeaderPrintDropdownOpen)}
+                      className="h-9 px-3.5 border border-slate-200 hover:bg-slate-50 text-slate-700 bg-white font-bold rounded-lg text-xs shadow-2xs transition focus:outline-none cursor-pointer inline-flex items-center gap-1.5 select-none"
+                    >
+                      <Printer className="h-4 w-4 text-slate-500" />
+                      <span>Print Options: {headerPrintSelection === 'Label' ? 'Label (Default)' : headerPrintSelection}</span>
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-405" />
+                    </button>
+
+                    {isHeaderPrintDropdownOpen && (
+                      <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1.5 z-[110] text-xs animate-in fade-in duration-100 font-sans">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeaderPrintSelection('Label');
+                            setIsHeaderPrintDropdownOpen(false);
+                            triggerToast('Print target set to Label', 'info');
+                          }}
+                          className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 font-semibold block ${headerPrintSelection === 'Label' ? 'text-brand-600 bg-brand-50/50' : 'text-slate-700'}`}
+                        >
+                          Print Label
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeaderPrintSelection('Packing Slip');
+                            setIsHeaderPrintDropdownOpen(false);
+                            triggerToast('Print target set to Packing Slip', 'info');
+                          }}
+                          className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 font-semibold block ${headerPrintSelection === 'Packing Slip' ? 'text-brand-600 bg-brand-50/50' : 'text-slate-700'}`}
+                        >
+                          Packing Slip
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeaderPrintSelection('Thank You Card');
+                            setIsHeaderPrintDropdownOpen(false);
+                            triggerToast('Print target set to Thank You Card', 'info');
+                          }}
+                          className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 font-semibold block ${headerPrintSelection === 'Thank You Card' ? 'text-brand-600 bg-brand-50/50' : 'text-slate-700'}`}
+                        >
+                          Thank You Card
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsLabelPopupOpen(false)}
+                    className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-6 overflow-y-auto max-h-[75vh] select-none text-slate-700 font-sans text-xs">
+              {/* SHEET WORKSPACE: Side Panel & Scrollable details */}
+              <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
+                
+                {/* INTERACTIVE LEFT SIDEBAR: Shipments Tracker */}
+                <div className="w-[180px] border-r border-slate-100 flex flex-col bg-slate-50/50 py-4 h-full select-none">
+                  <div className="px-4 pb-2 flex items-center justify-between border-b border-slate-200/60 mb-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Shipments</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (shipmentTabs.length >= 5) {
+                          triggerToast('Maximum 5 shipments allowed per layout constraints', 'info');
+                          return;
+                        }
+                        const newTab = `Shipment ${shipmentTabs.length + 1}`;
+                        setShipmentTabs(prev => [...prev, newTab]);
+                        setActiveShipmentTabIdx(shipmentTabs.length);
+                        triggerToast(`Created new workspace draft: ${newTab}`, 'success');
+                      }}
+                      className="p-1 hover:bg-slate-200 text-brand-600 hover:text-brand-700 rounded-full cursor-pointer transition-all"
+                      title="Add Shipment"
+                    >
+                      <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-2.5 space-y-1">
+                    {shipmentTabs.map((tab, idx) => (
+                      <div
+                        key={tab}
+                        onClick={() => {
+                          setActiveShipmentTabIdx(idx);
+                          triggerToast(`Switched fields to ${tab}`, 'info');
+                        }}
+                        className={`group px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer flex items-center justify-between ${
+                          idx === activeShipmentTabIdx
+                            ? 'bg-brand-50 text-brand-700 font-bold shadow-3xs'
+                            : 'text-slate-650 hover:bg-slate-100/80 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="truncate">{tab}</span>
+                        {shipmentTabs.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const updated = shipmentTabs.filter((_, i) => i !== idx);
+                              setShipmentTabs(updated);
+                              if (activeShipmentTabIdx >= updated.length) {
+                                setActiveShipmentTabIdx(Math.max(0, updated.length - 1));
+                              }
+                              triggerToast(`Discarded ${tab} parameters`, 'info');
+                            }}
+                            className="hidden group-hover:flex p-0.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded transition"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SCROLLABLE INNER SECTION: Form grids */}
+                <div className="flex-1 bg-slate-50/50 p-6 overflow-y-auto h-full text-slate-700 text-xs">
                 {/* Main 2-Column Split with adjusted width: 5/12 left, 7/12 right */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                   
@@ -6898,166 +7034,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 font-semibold text-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsLabelPopupOpen(false)}
-                  className="px-5 h-10 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer outline-none transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!labelFormFirstName.trim() || !labelFormLastName.trim() || !labelFormAddress1.trim() || !labelFormCity.trim() || !labelFormZip.trim()) {
-                      triggerToast('Please fill out all required fields (*)', 'info');
-                      return;
-                    }
-
-                    // Generate dynamic tracking codes
-                    let trackNo = '';
-                    let carrierName = '';
-                    let serviceName = '';
-                    let displayMethod = '';
-                    let ticketPrice = '$8.90';
-
-                    const activeFirstPkg = labelFormPackages[0] || { weight: '47.92', length: '7.00', width: '5.00', height: '14.00' };
-
-                    if (labelFormGetRateClicked && labelFormSelectedRateIndex !== -1) {
-                      const list = getServicesList(
-                        parseFloat(activeFirstPkg.weight || '47.92'),
-                        parseFloat(activeFirstPkg.length || '7.00'),
-                        parseFloat(activeFirstPkg.width || '5.00'),
-                        parseFloat(activeFirstPkg.height || '14.00')
-                      );
-                      const chosen = list[labelFormSelectedRateIndex];
-                      if (chosen) {
-                        trackNo = '9400' + Math.floor(100000000000000 + Math.random() * 899999999999999);
-                        carrierName = 'USPS';
-                        serviceName = chosen.name;
-                        displayMethod = chosen.name.includes('Priority') ? 'USPS Priority' : 'USPS GroundAdvantage';
-                        ticketPrice = chosen.price;
-                      } else {
-                        trackNo = '9400' + Math.floor(100000000000000 + Math.random() * 899999999999999);
-                        carrierName = 'USPS';
-                        serviceName = 'USPS GroundAdvantage';
-                        displayMethod = 'USPS GroundAdvantage';
-                        ticketPrice = '$8.90';
-                      }
-                    } else if (labelFormShipOption === 'tier') {
-                      trackNo = '1Z' + Math.floor(1000 + Math.random() * 9000) + 'AA' + Math.floor(10 + Math.random() * 89) + Math.floor(100000 + Math.random() * 899999);
-                      carrierName = 'UPS';
-                      serviceName = 'UPS standard (Gelato Suggested)';
-                      displayMethod = 'UPS Standard';
-                      ticketPrice = '$9.50';
-                    } else if (labelFormSelectedCarrier.includes('UPS')) {
-                      trackNo = '1Z999AA10123' + Math.floor(100000 + Math.random() * 899999);
-                      carrierName = 'UPS';
-                      serviceName = 'UPS Ground';
-                      displayMethod = 'UPS Ground';
-                      ticketPrice = '$12.50';
-                    } else if (labelFormSelectedCarrier.includes('FedEx')) {
-                      trackNo = '7832' + Math.floor(100000000 + Math.random() * 899999999);
-                      carrierName = 'FedEx';
-                      serviceName = 'FedEx Express Overnight';
-                      displayMethod = 'FedEx Express';
-                      ticketPrice = '$24.00';
-                    } else if (labelFormSelectedCarrier.includes('USPS')) {
-                      trackNo = '9400' + Math.floor(100000000000000 + Math.random() * 899999999999999);
-                      carrierName = 'USPS';
-                      serviceName = 'USPS Priority Mail';
-                      displayMethod = 'USPS Priority';
-                      ticketPrice = '$8.90';
-                    } else {
-                      trackNo = 'JD014' + Math.floor(1000000000 + Math.random() * 8999999999);
-                      carrierName = 'DHL';
-                      serviceName = 'DHL Express Air';
-                      displayMethod = 'DHL Express';
-                      ticketPrice = '$45.50';
-                    }
-
-                    const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    const todayTimeStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                    
-                    const generatedShipment = {
-                      trackingNumber: trackNo,
-                      carrier: carrierName,
-                      service: serviceName,
-                      shipDate: todayStr,
-                      shippingMethod: displayMethod,
-                      weight: `${labelFormPackages.reduce((acc, p) => acc + (parseFloat(p.weight) || 0), 0)} ${labelFormWeightUnit.slice(-3, -1)}`,
-                      size: `${labelFormPackages[0]?.length || '10'} x ${labelFormPackages[0]?.width || '8'} x ${labelFormPackages[0]?.height || '6'} ${labelFormDimUnit.slice(-3, -1)}`,
-                      price: ticketPrice,
-                      labelLink: 'https://www.ups.com/assets/resources/images/zpl-label-sample.png',
-                      printedDate: todayTimeStr + ' (SwiftPOD)',
-                      senderDetails: {
-                        name: `${senderFirstName} ${senderLastName}`,
-                        company: senderCompany,
-                        address: `${senderAddress1}${senderAddress2 ? ' ' + senderAddress2 : ''}, ${senderCity}, ${senderZip}, ${senderCountry}`
-                      },
-                      recipientDetails: {
-                        firstName: labelFormFirstName,
-                        lastName: labelFormLastName,
-                        company: labelFormCompany,
-                        email: labelFormEmail,
-                        phone: labelFormPhone,
-                        country: labelFormCountry,
-                        address1: labelFormAddress1,
-                        address2: labelFormAddress2,
-                        city: labelFormCity,
-                        zip: labelFormZip
-                      }
-                    };
-
-                    const newAct = {
-                      id: `act_ship_${Date.now()}`,
-                      date: todayTimeStr,
-                      action: `Created Shipping Label. Carrier: ${carrierName}, Tracking: "${trackNo}"`,
-                      performedBy: 'Hiep Admin'
-                    };
-
-                    // Update in our master orders array
-                    setOrders(prev => prev.map(o => {
-                      if (o.id === selectedOrderDetail.id) {
-                        const existingShipments = o.shipments || [];
-                        const updatedOrder: OrderManagementItem = {
-                          ...o,
-                          orderStatus: o.orderStatus === 'New' ? 'Prepared' as const : o.orderStatus,
-                          shippingStatus: 'Pre Transit' as const,
-                          trackingNumber: trackNo,
-                          shipmentInfo: generatedShipment,
-                          shipments: [...existingShipments, generatedShipment],
-                          activityHistory: [newAct, ...(o.activityHistory || [])]
-                        };
-                        return updatedOrder;
-                      }
-                      return o;
-                    }));
-
-                    // Update in current open details state
-                    setSelectedOrderDetail(prev => {
-                      if (!prev) return null;
-                      const existingShipments = prev.shipments || [];
-                      return {
-                        ...prev,
-                        orderStatus: prev.orderStatus === 'New' ? 'Prepared' as const : prev.orderStatus,
-                        shippingStatus: 'Pre Transit' as const,
-                        trackingNumber: trackNo,
-                        shipmentInfo: generatedShipment,
-                        shipments: [...existingShipments, generatedShipment],
-                        activityHistory: [newAct, ...(prev.activityHistory || [])]
-                      };
-                    });
-
-                    setIsLabelPopupOpen(false);
-                    triggerToast(`Shipping label generated for package reference successfully!`, 'success');
-                  }}
-                  className="px-5 h-10 btn-primary-gradient text-white rounded-lg text-sm font-semibold cursor-pointer outline-none transition-all flex items-center gap-1.5"
-                >
-                  <Printer className="h-4 w-4" />
-                  <span>Create & Save Label</span>
-                </button>
               </div>
             </motion.div>
           </div>

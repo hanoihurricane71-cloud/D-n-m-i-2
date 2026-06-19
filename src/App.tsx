@@ -51,7 +51,8 @@ import {
   QrCode,
   RefreshCw,
   UserCheck,
-  Inbox
+  Inbox,
+  MessageSquarePlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -596,6 +597,125 @@ export default function App() {
     setInternalNoteDraft('');
     setInitialInternalNote(selectedOrderDetail?.internalNotes || '');
   }, [selectedOrderDetail?.id]);
+
+  const [isDetailActionsOpen, setIsDetailActionsOpen] = useState(false);
+
+  useEffect(() => {
+    setIsDetailActionsOpen(false);
+  }, [selectedOrderDetail?.id]);
+
+  const handleUpdateShippingMethod = (newMethod: string) => {
+    if (!selectedOrderDetail) return;
+    const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newAct = {
+      id: `act_${Date.now()}`,
+      date: nowStr,
+      action: `Shipping method updated to ${newMethod}`,
+      performedBy: 'Hiep Admin'
+    };
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === selectedOrderDetail.id) {
+        return { 
+          ...o, 
+          shippingMethod: newMethod,
+          activityHistory: [newAct, ...(o.activityHistory || [])]
+        };
+      }
+      return o;
+    }));
+
+    setSelectedOrderDetail(prev => prev ? { 
+      ...prev, 
+      shippingMethod: newMethod,
+      activityHistory: [newAct, ...(prev.activityHistory || [])]
+    } : null);
+
+    triggerToast(`Shipping method updated to ${newMethod}`, 'success');
+  };
+
+  const handleUpdateOrderStatus = (newStatus: string) => {
+    if (!selectedOrderDetail) return;
+    const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newAct = {
+      id: `act_${Date.now()}`,
+      date: nowStr,
+      action: `Order status updated to ${newStatus}`,
+      performedBy: 'Hiep Admin'
+    };
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === selectedOrderDetail.id) {
+        return { 
+          ...o, 
+          orderStatus: newStatus as any,
+          activityHistory: [newAct, ...(o.activityHistory || [])]
+        };
+      }
+      return o;
+    }));
+
+    setSelectedOrderDetail(prev => prev ? { 
+      ...prev, 
+      orderStatus: newStatus as any,
+      activityHistory: [newAct, ...(prev.activityHistory || [])]
+    } : null);
+
+    triggerToast(`Order status updated to ${newStatus}`, 'success');
+  };
+
+  const handleUpdateShippingLabel = () => {
+    if (!selectedOrderDetail) return;
+    const labelLink = "https://www.orimi.com/pdf-test.pdf";
+    const service = selectedOrderDetail.shippingMethod || 'UPS Ground';
+    const trackingNumber = `1Z${Math.floor(100000 + Math.random() * 900000)}Y${Math.floor(100000 + Math.random() * 900000)}`;
+    const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const newAct = {
+      id: `act_${Date.now()}`,
+      date: nowStr,
+      action: `Created Shipping Label (Carrier: UPS, Tracking: ${trackingNumber})`,
+      performedBy: 'Hiep Admin'
+    };
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === selectedOrderDetail.id) {
+        return { 
+          ...o, 
+          trackingNumber,
+          shipmentInfo: {
+            trackingNumber,
+            carrier: 'UPS',
+            service,
+            shipDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            weight: '1.2 lbs',
+            size: '12x9x3 in',
+            price: '$12.50',
+            labelLink
+          },
+          activityHistory: [newAct, ...(o.activityHistory || [])]
+        };
+      }
+      return o;
+    }));
+
+    setSelectedOrderDetail(prev => prev ? { 
+      ...prev, 
+      trackingNumber,
+      shipmentInfo: {
+        trackingNumber,
+        carrier: 'UPS',
+        service,
+        shipDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        weight: '1.2 lbs',
+        size: '12x9x3 in',
+        price: '$12.50',
+        labelLink
+      },
+      activityHistory: [newAct, ...(prev.activityHistory || [])]
+    } : null);
+
+    triggerToast(`Shipping Label generated successfully!`, 'success');
+  };
 
   const [isEditingShipAddress, setIsEditingShipAddress] = useState(false);
   const [shipName, setShipName] = useState('');
@@ -5702,32 +5822,145 @@ export default function App() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <h2 className="text-xl font-bold font-sans text-slate-850 font-mono select-all truncate max-w-[200px]">
+                    <h2 className="text-xl font-bold font-sans text-slate-850 font-mono select-all truncate max-w-[200px]" title={selectedOrderDetail.orderNumber}>
                       {selectedOrderDetail.orderNumber}
                     </h2>
                     <span className="text-slate-300">|</span>
-                    <span className="text-sm text-slate-500 font-medium font-mono select-all truncate max-w-[200px]">
+                    <span className="text-sm text-slate-500 font-medium font-mono select-all truncate max-w-[200px]" title={selectedOrderDetail.refNumber}>
                       {selectedOrderDetail.refNumber || 'REF-N/A'}
                     </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOrderDetailOpen(false);
-                    setIsRejectingOrder(false);
-                    setOrderRejectReasonText('');
-                  }}
-                  className="p-1.5 hover:bg-slate-200/60 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+
+                {/* Right side controls: Comment & Actions dropdown & Close button */}
+                <div className="flex items-center gap-3">
+                  {/* Speech Bubble Comment with + (Scrolls to comment section) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      document.getElementById('timeline-comment-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="h-9 w-9 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full flex items-center justify-center transition duration-155 cursor-pointer shadow-xs focus:outline-none"
+                    title="Scroll to Timeline & Comments"
+                  >
+                    <MessageSquarePlus className="h-4 w-4 text-slate-600" />
+                  </button>
+
+                  {/* Actions Dropdown */}
+                  <div className="relative inline-block text-left">
+                    <button
+                      type="button"
+                      onClick={() => setIsDetailActionsOpen(!isDetailActionsOpen)}
+                      className="px-4 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-full text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition shadow-xs focus:outline-none"
+                    >
+                      <span>Actions</span>
+                      <ChevronDown className="h-3 w-3 text-slate-500" />
+                    </button>
+
+                    {isDetailActionsOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-30 cursor-default animate-none" 
+                          onClick={() => setIsDetailActionsOpen(false)} 
+                        />
+                        <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-40 py-2 text-left font-sans animate-fade-in divide-y divide-slate-100">
+                          {/* Update Order Status */}
+                          <div className="py-1">
+                            <span className="block px-4 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Update Order Status</span>
+                            {['New', 'In Production', 'Shipped', 'On Hold', 'Rejected', 'Cancelled'].map((status) => (
+                              <button
+                                key={status}
+                                type="button"
+                                onClick={() => {
+                                  setIsDetailActionsOpen(false);
+                                  handleUpdateOrderStatus(status);
+                                }}
+                                className={`w-full flex items-center justify-between px-4 py-2 text-xs font-semibold ${
+                                  selectedOrderDetail.orderStatus === status 
+                                    ? 'bg-brand-50 text-brand-750' 
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span>{status}</span>
+                                {selectedOrderDetail.orderStatus === status && <Check className="h-3.5 w-3.5 text-brand-600" />}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Edit Shipping Method */}
+                          <div className="py-1">
+                            <span className="block px-4 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Change Shipping Method</span>
+                            {['UPS Ground', 'FedEx Express', 'DHL Worldwide', 'USPS Priority'].map((method) => (
+                              <button
+                                key={method}
+                                type="button"
+                                onClick={() => {
+                                  setIsDetailActionsOpen(false);
+                                  handleUpdateShippingMethod(method);
+                                }}
+                                className={`w-full flex items-center justify-between px-4 py-2 text-xs font-semibold ${
+                                  selectedOrderDetail.shippingMethod === method 
+                                    ? 'bg-brand-50 text-brand-750' 
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span>{method}</span>
+                                {selectedOrderDetail.shippingMethod === method && <Check className="h-3.5 w-3.5 text-brand-600" />}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Order Actions */}
+                          <div className="py-1.5 px-1 bg-slate-50/40">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsDetailActionsOpen(false);
+                                triggerToast('Generating label for order...', 'info');
+                                setTimeout(() => {
+                                  handleUpdateShippingLabel();
+                                }, 1000);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-left"
+                            >
+                              <Printer className="h-3.5 w-3.5 text-slate-550 shrink-0" />
+                              <span>Generate Shipping Label</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsDetailActionsOpen(false);
+                                setOrderToDelete(selectedOrderDetail);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                              <span>Delete Order</span>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOrderDetailOpen(false);
+                      setIsRejectingOrder(false);
+                      setOrderRejectReasonText('');
+                    }}
+                    className="p-1.5 hover:bg-slate-200/60 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6 animate-none">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                  
                   {/* Left Column (2/3 width on md+) */}
                   <div className="md:col-span-2 space-y-6">
                     {/* Unified Order Details section */}
@@ -5735,7 +5968,7 @@ export default function App() {
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Order Details</h4>
                       <div className="border border-slate-200/65 rounded-xl bg-white overflow-hidden shadow-xs divide-y divide-slate-100">
                         {/* Meta Grid (Top part) */}
-                        <div className="p-4 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div className="p-4 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           <div>
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Store Name</span>
                             <span className="text-sm font-semibold text-slate-850 mt-1 block font-sans">{selectedOrderDetail.customerStore}</span>
@@ -5744,80 +5977,13 @@ export default function App() {
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Order Date</span>
                             <span className="text-sm font-normal text-slate-700 mt-1 block font-sans">{selectedOrderDetail.orderDate}</span>
                           </div>
-                          <div className="relative">
+                          <div>
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Shipping Method</span>
-                            <select
-                              value={pendingShippingMethod !== null ? pendingShippingMethod : (selectedOrderDetail.shippingMethod || 'UPS Ground')}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === (selectedOrderDetail.shippingMethod || 'UPS Ground')) {
-                                  setPendingShippingMethod(null);
-                                } else {
-                                  setPendingShippingMethod(val);
-                                }
-                              }}
-                              className={`mt-1 block w-full text-xs font-semibold text-slate-700 bg-white border rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer h-7 transition ${
-                                pendingShippingMethod !== null ? 'border-amber-400 ring-1 ring-amber-100 bg-amber-50/10' : 'border-slate-200 hover:border-slate-350'
-                              }`}
-                            >
-                              <option value="UPS Ground">UPS Ground</option>
-                              <option value="FedEx Express">FedEx Express</option>
-                              <option value="DHL Worldwide">DHL Worldwide</option>
-                              <option value="USPS Priority">USPS Priority</option>
-                            </select>
-                            {pendingShippingMethod !== null && (
-                              <div className="absolute left-0 right-0 top-full mt-2 z-[60] w-56 bg-white border border-slate-200 text-slate-800 rounded-xl shadow-xl p-3 text-left animate-in fade-in slide-in-from-top-2 duration-150">
-                                <div className="absolute -top-1 left-6 w-2.5 h-2.5 bg-white border-t border-l border-slate-200 rotate-45" />
-                                <p className="text-[11px] font-medium text-slate-700 leading-normal font-sans">
-                                  Change shipping method to <span className="font-bold text-brand-600">{pendingShippingMethod}</span>?
-                                </p>
-                                <div className="flex gap-2 justify-end mt-2.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingShippingMethod(null)}
-                                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 font-bold rounded text-[10px] cursor-pointer transition focus:outline-none"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newMethod = pendingShippingMethod;
-                                      const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                                      const newAct = {
-                                        id: `act_${Date.now()}`,
-                                        date: nowStr,
-                                        action: `Shipping method updated to ${newMethod}`,
-                                        performedBy: 'Hiep Admin'
-                                      };
-
-                                      setOrders(prev => prev.map(o => {
-                                        if (o.id === selectedOrderDetail.id) {
-                                          return { 
-                                            ...o, 
-                                            shippingMethod: newMethod,
-                                            activityHistory: [newAct, ...(o.activityHistory || [])]
-                                          };
-                                        }
-                                        return o;
-                                      }));
-
-                                      setSelectedOrderDetail(prev => prev ? { 
-                                        ...prev, 
-                                        shippingMethod: newMethod,
-                                        activityHistory: [newAct, ...(prev.activityHistory || [])]
-                                      } : null);
-
-                                      triggerToast(`Shipping method updated to ${newMethod}`, 'success');
-                                      setPendingShippingMethod(null);
-                                    }}
-                                    className="px-2 py-0.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded text-[10px] cursor-pointer transition focus:outline-none"
-                                  >
-                                    Confirm
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                            <span className="text-sm font-semibold text-slate-850 mt-1 block font-sans">{selectedOrderDetail.shippingMethod || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Total Quantity</span>
+                            <span className="text-sm font-semibold text-slate-800 mt-1 block font-mono">{selectedOrderDetail.quantity}</span>
                           </div>
                           <div>
                             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Order Status</span>
@@ -5865,30 +6031,26 @@ export default function App() {
                               </span>
                             </div>
                           </div>
-                          <div>
-                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Total Quantity</span>
-                            <span className="text-sm font-semibold text-slate-800 mt-1 block font-mono">{selectedOrderDetail.quantity}</span>
-                          </div>
                         </div>
 
                         {/* Addresses row (Bottom part) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 font-sans">
                           {/* Return Address */}
-                          <div className="p-4 space-y-2">
-                            <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase font-sans">Return Address</h4>
-                            <div className="text-xs text-slate-600 space-y-0.5 font-sans leading-relaxed">
+                          <div className="p-4 space-y-3 font-sans">
+                            <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Return Address</h4>
+                            <div className="text-xs text-slate-600 space-y-1 font-sans leading-relaxed">
                               <p className="font-bold text-slate-800 text-sm">
                                 {selectedOrderDetail.returnAddress?.name || 'mytest'}
                               </p>
-                              <p>{selectedOrderDetail.returnAddress?.companyLine || 'Company_address-1'}</p>
+                              {selectedOrderDetail.returnAddress?.companyLine && <p>{selectedOrderDetail.returnAddress.companyLine}</p>}
                               <p>{selectedOrderDetail.returnAddress?.addressLine || '715 Broadway2313, United States,'}</p>
                               <p>{selectedOrderDetail.returnAddress?.cityStateZip || 'NY, 20912, US'}</p>
                             </div>
                           </div>
 
                           {/* Ship Address */}
-                          <div className="p-4 space-y-2">
-                            <div className="flex items-center justify-between font-sans">
+                          <div className="p-4 space-y-3 font-sans">
+                            <div className="flex items-center justify-between">
                               <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Ship Address</h4>
                               {!isEditingShipAddress ? (
                                 <button
@@ -5908,24 +6070,24 @@ export default function App() {
                                     setShipPhone(sAddr.phone);
                                     setIsEditingShipAddress(true);
                                   }}
-                                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition cursor-pointer"
+                                  className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-350 rounded-md text-[10px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition flex items-center gap-1 shadow-2xs focus:outline-none"
                                 >
-                                  Edit
+                                  <Edit className="h-3 w-3 text-slate-400" />
+                                  <span>Edit Address</span>
                                 </button>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => setIsEditingShipAddress(false)}
-                                    className="text-xs font-medium text-slate-500 hover:text-slate-700 transition cursor-pointer"
+                                    className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-semibold cursor-pointer transition focus:outline-none"
                                   >
                                     Cancel
                                   </button>
-                                  <span className="text-slate-300 text-xs">|</span>
                                   <button
                                     type="button"
                                     onClick={handleSaveShipAddress}
-                                    className="text-xs font-bold text-brand-600 hover:text-brand-700 transition cursor-pointer"
+                                    className="px-2 py-1 bg-brand-500 hover:bg-brand-600 text-white rounded text-[10px] font-semibold cursor-pointer transition focus:outline-none"
                                   >
                                     Save
                                   </button>
@@ -5934,14 +6096,19 @@ export default function App() {
                             </div>
 
                             {!isEditingShipAddress ? (
-                              <div className="text-xs text-slate-600 space-y-0.5 font-sans leading-relaxed">
+                              <div className="text-xs text-slate-600 space-y-1 font-sans leading-relaxed">
                                 <p className="font-bold text-slate-800 text-sm">
                                   {selectedOrderDetail.shipAddress?.name || 'Auo Tivi'}
                                 </p>
-                                <p>{selectedOrderDetail.shipAddress?.companyLine || '123'}</p>
+                                {selectedOrderDetail.shipAddress?.companyLine && <p>{selectedOrderDetail.shipAddress.companyLine}</p>}
                                 <p>{selectedOrderDetail.shipAddress?.addressLine || '3002 WOLF LAKE BLVD, NEW ALBANY,'}</p>
                                 <p>{selectedOrderDetail.shipAddress?.cityStateZip || 'Indiana, 80201, US'}</p>
-                                <p>{selectedOrderDetail.shipAddress?.phone || '9734508586'}</p>
+                                {selectedOrderDetail.shipAddress?.phone && (
+                                  <p className="text-slate-500 font-mono text-[11px] mt-1">
+                                    <span className="font-sans text-slate-400 font-bold text-[9px] uppercase tracking-wider mr-1">Phone:</span>
+                                    {selectedOrderDetail.shipAddress.phone}
+                                  </p>
+                                )}
                               </div>
                             ) : (
                               <div className="space-y-2 pt-1 font-sans">
@@ -5973,7 +6140,7 @@ export default function App() {
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">City, State, Zip, Country</label>
+                                  <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-wider mb-0.5">City, State, Zip, Country</label>
                                   <input
                                     type="text"
                                     value={shipCityStateZip}
@@ -6036,95 +6203,115 @@ export default function App() {
                     {/* Shipment Information section */}
                     <div className="space-y-3">
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Shipment Information</h4>
-                      <div className="border border-slate-200/60 rounded-xl p-4 bg-white shadow-xs">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                      <div className="border border-slate-200/65 rounded-xl bg-white overflow-hidden shadow-xs divide-y divide-slate-100">
+                        {/* Meta Specifications (Top part) */}
+                        <div className="p-4 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tracking Number</span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-sm font-normal font-mono text-slate-700 select-all block">
-                                {selectedOrderDetail.trackingNumber || 'Awaiting Shipment'}
-                              </span>
-                              {selectedOrderDetail.trackingNumber && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(selectedOrderDetail.trackingNumber || '');
-                                    triggerToast('Tracking number copied!', 'success');
-                                  }}
-                                  className="p-1 text-slate-400 hover:text-slate-600 rounded transition hover:bg-slate-50 cursor-pointer inline-flex focus:outline-none"
-                                  title="Copy Tracking Number"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Carrier</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.carrier || '—'}
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Carrier & Service Level</span>
+                            <span className="text-sm font-semibold text-slate-850 mt-1 block font-sans">
+                              {selectedOrderDetail.shipmentInfo?.carrier || '—'} {selectedOrderDetail.shipmentInfo?.service ? `(${selectedOrderDetail.shipmentInfo.service})` : ''}
                             </span>
                           </div>
                           <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Service Level</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.service || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ship Date</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Ship Date</span>
+                            <span className="text-sm font-normal text-slate-700 mt-1 block font-sans">
                               {selectedOrderDetail.shipmentInfo?.shipDate || '—'}
                             </span>
                           </div>
                           <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Weight</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.weight || '—'}
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Weight / Dimensions</span>
+                            <span className="text-sm font-normal text-slate-700 mt-1 block font-sans">
+                              {selectedOrderDetail.shipmentInfo?.weight || '—'} / {selectedOrderDetail.shipmentInfo?.size || '—'}
                             </span>
                           </div>
                           <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Size / Dimensions</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
-                              {selectedOrderDetail.shipmentInfo?.size || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Price / Cost</span>
-                            <span className="text-sm font-normal text-slate-700 mt-0.5 block">
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Fulfillment Cost</span>
+                            <span className="text-sm font-semibold text-slate-800 mt-1 block font-mono">
                               {selectedOrderDetail.shipmentInfo?.price || '—'}
                             </span>
                           </div>
-                          <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shipping Label</span>
-                            {selectedOrderDetail.shipmentInfo?.labelLink ? (
-                              <div className="flex gap-2 mt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(selectedOrderDetail.shipmentInfo?.labelLink || '');
-                                    triggerToast('Label link copied!', 'success');
-                                  }}
-                                  className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-350 rounded-md text-[10px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition flex items-center gap-1 focus:outline-none"
-                                  title="Copy Label Link"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                  Copy
-                                </button>
-                                <a
-                                  href={selectedOrderDetail.shipmentInfo.labelLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-2.5 py-1 bg-brand-600 text-white rounded-md text-[10px] font-bold hover:bg-brand-700 inline-flex items-center gap-1 focus:outline-none transition cursor-pointer"
-                                  title="Open Label"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  Open
-                                </a>
+                        </div>
+
+                        {/* Addresses / Info Splitting (Bottom part) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                          {/* Left Column: Tracking info */}
+                          <div className="p-4 space-y-3 font-sans">
+                            <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Tracking Information</h4>
+                            <div className="space-y-2">
+                              <div>
+                                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tracking Number</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="text-sm font-mono font-bold text-slate-700 select-all block">
+                                    {selectedOrderDetail.trackingNumber || 'Awaiting Shipment'}
+                                  </span>
+                                  {selectedOrderDetail.trackingNumber && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(selectedOrderDetail.trackingNumber || '');
+                                        triggerToast('Tracking number copied!', 'success');
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-slate-600 rounded transition hover:bg-slate-50 cursor-pointer inline-flex focus:outline-none"
+                                      title="Copy Tracking Number"
+                                    >
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            ) : (
-                              <span className="text-sm font-normal text-slate-400 mt-0.5 block italic">Not generated</span>
-                            )}
+                              <div>
+                                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Courier Status</span>
+                                <p className="text-xs text-slate-600 mt-0.5">
+                                  {selectedOrderDetail.trackingNumber 
+                                    ? "Tracking history registered on remote API. Delivery is expected within 3 business days." 
+                                    : "Fulfillment transit information will be parsed upon shipping labels print/confirmation."}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Column: Label detail button and Memo */}
+                          <div className="p-4 space-y-3 font-sans">
+                            <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Shipping Label & Verification</h4>
+                            <div className="space-y-2.5">
+                              <div>
+                                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fulfillment Document</span>
+                                {selectedOrderDetail.shipmentInfo?.labelLink ? (
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(selectedOrderDetail.shipmentInfo?.labelLink || '');
+                                        triggerToast('Label link copied!', 'success');
+                                      }}
+                                      className="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-350 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition flex items-center gap-1.5 shadow-2xs focus:outline-none"
+                                      title="Copy Label Link"
+                                    >
+                                      <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                      <span>Copy Link</span>
+                                    </button>
+                                    <a
+                                      href={selectedOrderDetail.shipmentInfo.labelLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-750 border border-brand-100 rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shadow-2xs focus:outline-none"
+                                      title="Open Label"
+                                    >
+                                      <ExternalLink className="h-3.5 w-3.5 text-brand-600" />
+                                      <span>Open Label</span>
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-slate-401 italic block mt-0.5">Not generated yet. Trigger action from top bar dropdown.</span>
+                                )}
+                              </div>
+                              <div>
+                                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Internal Note / Barcode status</span>
+                                <p className="text-xs text-slate-550 leading-relaxed mt-0.5">
+                                  Our conveyor belt matches barcodes automatically with dimensions. Contact supervisor if measurements are incorrect.
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -6133,7 +6320,7 @@ export default function App() {
                   </div>
 
                   {/* Right Column (1/3 width on md+): Internal Notes & Timeline */}
-                  <div className="border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-6 flex flex-col h-full self-stretch min-h-0">
+                  <div id="timeline-comment-section" className="border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-6 flex flex-col h-full self-stretch min-h-0">
                     
                     {/* Timeline & Notes section */}
                     <div className="flex flex-col flex-1 min-h-0 space-y-3.5 pt-1">
