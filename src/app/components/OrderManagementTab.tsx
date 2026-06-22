@@ -109,6 +109,7 @@ export function OrderManagementTab({
   triggerToast,
   onUpdateOrderStatus,
 }: OrderManagementTabProps) {
+  const [activeTrackingDropdownId, setActiveTrackingDropdownId] = React.useState<string | null>(null);
   const [pendingStatusUpdate, setPendingStatusUpdate] = React.useState<{ orderId: string, status: string } | null>(null);
   const hasActiveFilters =
     orderSearchQuery ||
@@ -123,7 +124,7 @@ export function OrderManagementTab({
     <>
       {/* Header context */}
       <div className="px-6 pt-6 select-none">
-        <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Order management</h1>
+        <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Order</h1>
       </div>
 
       {/* Filters Area */}
@@ -359,20 +360,105 @@ export function OrderManagementTab({
                     </span>
                   </td>
                   {/* Tracking */}
-                  <td className="py-3 px-6 font-medium whitespace-nowrap">
+                  <td className="py-3 px-6 font-medium whitespace-nowrap relative">
                     {order.shipments && order.shipments.length > 0 ? (
-                      <div className="flex flex-col gap-1 max-y-[45px] overflow-y-auto pr-1">
-                        {order.shipments.map((shp) => (
-                          <div key={shp.trackingNumber} className="flex items-center justify-between gap-1 font-mono text-slate-600 bg-brand-50/40 border border-brand-100/50 rounded px-1.5 py-0.5 max-w-[130px]">
-                            <span className="select-all tracking-wide font-semibold text-[10px] truncate max-w-[75px]" title={shp.trackingNumber}>
-                              {shp.trackingNumber}
-                            </span>
-                            <span className="text-[8.5px] font-bold text-brand-700 bg-brand-100/60 px-1 py-0.1 rounded leading-none font-sans scale-90">
-                              {shp.carrier}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                      order.shipments.length === 1 ? (
+                        <div className="flex items-center gap-1.5 font-mono text-slate-600 bg-brand-50/40 border border-brand-100/50 rounded-lg px-2 py-0.5 max-w-[170px]">
+                          <span className="select-all tracking-wide font-semibold text-[10px] truncate max-w-[90px]" title={order.shipments[0].trackingNumber}>
+                            {order.shipments[0].trackingNumber}
+                          </span>
+                          <span className="text-[8.5px] font-bold text-brand-700 bg-brand-100/60 px-1 py-0.1 rounded leading-none font-sans scale-90 shrink-0">
+                            {order.shipments[0].carrier}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(order.shipments[0].trackingNumber);
+                              setCopiedOrderId(`ship_0_${order.id}`);
+                              triggerToast('Copied tracking number to clipboard.', 'success');
+                              setTimeout(() => setCopiedOrderId(null), 2000);
+                            }}
+                            className="p-1 hover:bg-white text-slate-400 hover:text-slate-600 rounded transition cursor-pointer shrink-0"
+                            title="Copy tracking number"
+                          >
+                            {copiedOrderId === `ship_0_${order.id}` ? (
+                              <Check className="h-3 w-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative inline-block text-left">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTrackingDropdownId(activeTrackingDropdownId === order.id ? null : order.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-lg text-xs font-semibold cursor-pointer select-none transition"
+                          >
+                            <span>{order.shipments.length} trackings</span>
+                            <ChevronDown className={`h-3.5 w-3.5 text-brand-500 transition-transform duration-200 ${activeTrackingDropdownId === order.id ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {activeTrackingDropdownId === order.id && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40 bg-transparent"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveTrackingDropdownId(null);
+                                }}
+                              />
+                              <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl p-3 z-50 min-w-[250px] text-left">
+                                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-2 border-b border-slate-100 pb-1 ml-0.5 select-none">
+                                  Order Shipments ({order.shipments.length})
+                                </div>
+                                <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+                                  {order.shipments.map((shp, sIdx) => {
+                                    const trackingCopyKey = `ship_${sIdx}_${order.id}`;
+                                    return (
+                                      <div
+                                        key={shp.trackingNumber}
+                                        className="flex items-center justify-between gap-3 p-1.5 hover:bg-slate-50 rounded-lg border border-slate-100 font-mono text-slate-600 transition"
+                                      >
+                                        <div className="flex flex-col gap-0.5 text-left truncate">
+                                          <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-wider leading-none">
+                                            {shp.carrier}
+                                          </span>
+                                          <span className="select-all tracking-wide font-bold text-xs text-slate-800 truncate" title={shp.trackingNumber}>
+                                            {shp.trackingNumber}
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(shp.trackingNumber);
+                                            setCopiedOrderId(trackingCopyKey);
+                                            triggerToast(`Copied ${shp.carrier} tracking number!`, 'success');
+                                            setTimeout(() => setCopiedOrderId(null), 2000);
+                                          }}
+                                          className="p-1 hover:bg-slate-150 text-slate-400 hover:text-slate-650 rounded-md transition cursor-pointer shrink-0"
+                                          title={`Copy ${shp.carrier} tracking`}
+                                        >
+                                          {copiedOrderId === trackingCopyKey ? (
+                                            <Check className="h-3 w-3 text-emerald-500" />
+                                          ) : (
+                                            <Copy className="h-3 w-3" />
+                                          )}
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )
                     ) : order.trackingNumber ? (
                       <div className="flex items-center gap-1.5 font-mono text-slate-600">
                         <span className="select-all tracking-wide font-mono text-xs w-[82px] block truncate" title={order.trackingNumber}>

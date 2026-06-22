@@ -233,7 +233,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null);
 
   // Active Navigation item
-  const [activeNavItem, setActiveNavItem] = useState<'Order management' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location'>('Product');
+  const [activeNavItem, setActiveNavItem] = useState<'Order' | 'Product' | 'Purchase order' | 'WIP printing' | 'Addition' | 'Location'>('Product');
 
   // WIP printing (PAP) custom list and states
   const [papSelectedChannel, setPapSelectedChannel] = useState<string>('RBBL');
@@ -1832,18 +1832,18 @@ export default function App() {
           {/* Navigation group */}
           <nav className="space-y-1.5" id="sidebar-navigation">
             <button
-              onClick={() => setActiveNavItem('Order management')}
+              onClick={() => setActiveNavItem('Order')}
               className={`
                 w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer
-                ${activeNavItem === 'Order management' 
+                ${activeNavItem === 'Order' 
                   ? 'bg-slate-100/90 text-slate-900 shadow-sm' 
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }
               `}
             >
-              <ClipboardList className={`h-5 w-5 ${activeNavItem === 'Order management' ? 'text-brand-600' : 'text-slate-400'}`} />
-              <span>Order management</span>
-              {activeNavItem === 'Order management' && (
+              <ClipboardList className={`h-5 w-5 ${activeNavItem === 'Order' ? 'text-brand-600' : 'text-slate-400'}`} />
+              <span>Order</span>
+              {activeNavItem === 'Order' && (
                 <span className="ml-auto block h-1.5 w-1.5 rounded-full bg-brand-600" />
               )}
             </button>
@@ -2027,12 +2027,12 @@ export default function App() {
         {/* Floating rounded central board */}
         <div id="main-content-card" className="bg-white rounded-2xl shadow-sm border border-slate-100/90 flex flex-col">
           
-          {activeNavItem === 'Order management' ? (
+          {activeNavItem === 'Order' ? (
             <>
               {/* Header context */}
               <div className="px-6 pt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Order management</h1>
+                  <h1 className="text-2xl font-bold font-sans text-slate-800 leading-tight">Order</h1>
                 </div>
               </div>
 
@@ -2795,8 +2795,8 @@ export default function App() {
                     <>
                       <th className="py-3 px-6 select-none font-sans">Name</th>
                       <th className="py-3 px-6 font-sans">Product style / SKU</th>
-                      <th className="py-3 px-6 font-sans text-right">Incoming stock</th>
-                      <th className="py-3 px-6 font-sans">Stock qty</th>
+                      <th className="py-3 px-6 font-sans text-right">Stock qty</th>
+                      <th className="py-3 px-6 font-sans">Status</th>
                       <th className="py-3 px-6 font-sans text-right">Item weight (oz)</th>
                       <th className="py-3 px-6 font-sans text-right">Packaging weight (lbs)</th>
                       <th className="py-3 px-6 font-sans">Customer</th>
@@ -2892,7 +2892,7 @@ export default function App() {
 
                           {/* Incoming stock */}
                           <td className={`py-4 px-6 font-mono font-medium text-right whitespace-nowrap transition-colors ${product.active ? 'text-slate-700' : 'text-slate-500'}`}>
-                            {product.incomingStock}
+                            {product.stockQty.replace(/[^0-9]/g, '') || '0'}
                           </td>
 
                           {/* Stock qty */}
@@ -2903,7 +2903,7 @@ export default function App() {
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 whitespace-nowrap">
-                                {product.stockQty}
+                                In stock
                               </span>
                             )}
                           </td>

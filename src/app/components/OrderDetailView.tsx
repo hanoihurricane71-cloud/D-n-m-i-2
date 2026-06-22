@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { 
   ChevronLeft, ChevronRight, ChevronDown, Copy, Printer, Eye, ShoppingCart, Package, MapPin, FileText, ClipboardList, MessageSquare, ArrowLeft
 } from "lucide-react";
-import { OrderManagementItem } from "../types";
+import { OrderManagementItem, Product } from "../types";
 
 const US_STATES = [
   { code: 'AL', name: 'Alabama' },
@@ -57,6 +58,8 @@ const US_STATES = [
   { code: 'WY', name: 'Wyoming' }
 ];
 
+const itemThumbImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2YzZjRmNiIgLz48cmVjdCB4PSI3MCIgeT0iMTEwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjI4MCIgcng9IjMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5YmEzYWYiIHN0cm9rZS13aWR0aD0iMjAiIC8+PGNpcmNsZSBjeD0iMzEwIiBjeT0iMTkwIiByPSIzNSIgZmlsbD0iIzliYTNhZiIgLz48cG9seWdvbiBwb2ludHM9IjgwLDM4MCAyMTAsMTk1IDMxNSwzODAiIGZpbGw9IiM5YmEzYWYiIC8+PHBvbHlnb24gcG9pbnRzPSIyMTUsMzgwIDMyNSwyMzAgNDIwLDM4MCIgZmlsbD0iIzliYTNhZiIgLz48L3N2Zz4=";
+
 interface OrderDetailViewProps {
   selectedOrderDetail: OrderManagementItem;
   setSelectedOrderDetail: React.Dispatch<React.SetStateAction<OrderManagementItem | null>>;
@@ -64,7 +67,7 @@ interface OrderDetailViewProps {
   setOrders: React.Dispatch<React.SetStateAction<OrderManagementItem[]>>;
   triggerToast: (msg: string, type: 'success' | 'error' | 'info') => void;
   handleUpdateOrderStatus: (id: string, status: any) => void;
-  onCreateLabel: (order: OrderManagementItem) => void;
+  onCreateLabel: (order: OrderManagementItem, shipmentActiveIdx?: number) => void;
   setIsVoidConfirmOpen: (open: boolean) => void;
   setIsShipmentDetailsModalOpen: (open: boolean) => void;
   setIsShipmentItemsModalOpen: (open: boolean) => void;
@@ -98,6 +101,7 @@ interface OrderDetailViewProps {
   setRawAddressToPaste: (val: string) => void;
   handleSaveShipAddress: () => void;
   parseUSAddress: (text: string) => any;
+  products?: Product[];
 }
 
 export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
@@ -139,7 +143,8 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
   rawAddressToPaste,
   setRawAddressToPaste,
   handleSaveShipAddress,
-  parseUSAddress
+  parseUSAddress,
+  products = []
 }) => {
   const [pendingShippingMethod, setPendingShippingMethod] = useState<string | null>(null);
   const [pendingOrderStatus, setPendingOrderStatus] = useState<string | null>(null);
@@ -148,11 +153,25 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
   const [isPrintDropdownOpen, setIsPrintDropdownOpen] = useState(false);
   const [submenu, setSubmenu] = useState<'main' | 'status' | 'shipping'>('main');
 
+  const [hoveredProductImage, setHoveredProductImage] = useState<{
+    src: string;
+    name: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
   // Return Address Editing States
   const [isEditingReturnAddress, setIsEditingReturnAddress] = useState(false);
   const [returnName, setReturnName] = useState("");
   const [returnCompanyLine, setReturnCompanyLine] = useState("");
+  const [returnEmail, setReturnEmail] = useState("");
+  const [returnPhone, setReturnPhone] = useState("");
+  const [returnCountry, setReturnCountry] = useState("United States");
   const [returnAddressLine, setReturnAddressLine] = useState("");
+  const [returnAddress2, setReturnAddress2] = useState("");
+  const [returnCity, setReturnCity] = useState("");
+  const [returnState, setReturnState] = useState("");
+  const [returnZip, setReturnZip] = useState("");
   const [returnCityStateZip, setReturnCityStateZip] = useState("");
 
   const handleSaveReturnAddress = () => {
@@ -161,7 +180,14 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
       name: returnName,
       companyLine: returnCompanyLine,
       addressLine: returnAddressLine,
-      cityStateZip: returnCityStateZip
+      address2: returnAddress2,
+      city: returnCity,
+      state: returnState,
+      zip: returnZip,
+      country: returnCountry,
+      cityStateZip: `${returnState ? returnState + ', ' : ''}${returnZip || ''}${returnCountry ? ', ' + returnCountry : ''}`,
+      phone: returnPhone,
+      email: returnEmail
     };
 
     const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -262,6 +288,21 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
           }`}>
             {selectedOrderDetail.destinationType || 'Domestic'}
           </span>
+
+          {selectedOrderDetail.insertType && (
+            <>
+              <div className="h-4 w-[1px] bg-slate-300 self-center mx-1" />
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border select-none ${
+                selectedOrderDetail.insertType === 'Thank You Card'
+                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                  : selectedOrderDetail.insertType === 'Gift Message'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}>
+                {selectedOrderDetail.insertType}
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -440,21 +481,130 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
                     {selectedOrderDetail.orderItems && selectedOrderDetail.orderItems.length > 0 ? (
-                      selectedOrderDetail.orderItems.map((item, index) => (
-                        <tr key={index} className="hover:bg-slate-50/50">
-                          <td className="py-4 px-5 font-medium text-slate-800 text-sm">{item.productName}</td>
-                          <td className="py-4 px-5 font-mono text-xs text-slate-600">{item.styleColor}</td>
-                          <td className="py-4 px-5 font-mono text-xs text-slate-600">{item.sku}</td>
-                          <td className="py-4 px-5 text-right font-mono font-medium text-slate-800 text-sm">{item.quantity}</td>
-                        </tr>
-                      ))
+                      selectedOrderDetail.orderItems.map((item, index) => {
+                        const productImg = (() => {
+                          const matched = products.find(p => {
+                            if (p.sku && item.sku) {
+                              const pSkuUpper = p.sku.toUpperCase();
+                              const itemSkuUpper = item.sku.toUpperCase();
+                              if (pSkuUpper.includes(itemSkuUpper) || itemSkuUpper.includes(pSkuUpper)) {
+                                return true;
+                              }
+                            }
+                            if (p.name && item.productName) {
+                              if (p.name.trim().toUpperCase() === item.productName.trim().toUpperCase()) {
+                                return true;
+                              }
+                            }
+                            return false;
+                          });
+                          return matched?.image || itemThumbImg;
+                        })();
+
+                        return (
+                          <tr key={index} className="hover:bg-slate-50/50">
+                            <td className="py-3 px-5 font-medium text-slate-800 text-sm">
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="h-10 w-10 flex-shrink-0 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center cursor-zoom-in transition-transform duration-200 hover:scale-105"
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const previewHeight = 240;
+                                    const previewWidth = 240;
+                                    const space = 12;
+                                    let x = rect.right + space;
+                                    let y = rect.top + rect.height / 2 - previewHeight / 2;
+                                    if (x + previewWidth > window.innerWidth) {
+                                      x = rect.left - previewWidth - space;
+                                    }
+                                    y = Math.max(10, Math.min(window.innerHeight - previewHeight - 10, y));
+                                    setHoveredProductImage({
+                                      src: productImg,
+                                      name: item.productName,
+                                      x,
+                                      y
+                                    });
+                                  }}
+                                  onMouseLeave={() => setHoveredProductImage(null)}
+                                >
+                                  <img 
+                                    src={productImg} 
+                                    alt={item.productName} 
+                                    className="h-full w-full object-cover" 
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </div>
+                                <span>{item.productName}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-5 font-mono text-xs text-slate-600">{item.styleColor}</td>
+                            <td className="py-4 px-5 font-mono text-xs text-slate-600">{item.sku}</td>
+                            <td className="py-4 px-5 text-right font-mono font-medium text-slate-800 text-sm">{item.quantity}</td>
+                          </tr>
+                        );
+                      })
                     ) : (
-                      <tr className="hover:bg-slate-50/50">
-                        <td className="py-4 px-5 font-medium text-slate-800 text-sm">Classic Crewneck Apparel</td>
-                        <td className="py-4 px-5 font-mono text-xs text-slate-600">Charcoal / M</td>
-                        <td className="py-4 px-5 font-mono text-xs text-slate-600">APP-CRW-002</td>
-                        <td className="py-4 px-5 text-right font-mono font-medium text-slate-800 text-sm">{selectedOrderDetail.quantity}</td>
-                      </tr>
+                      (() => {
+                        const productImg = (() => {
+                          const matched = products.find(p => {
+                            if (p.sku) {
+                              const pSkuUpper = p.sku.toUpperCase();
+                              if (pSkuUpper.includes('APP-CRW-002') || 'APP-CRW-002'.includes(pSkuUpper)) {
+                                return true;
+                              }
+                            }
+                            if (p.name) {
+                              if (p.name.trim().toUpperCase() === 'CLASSIC CREWNECK APPAREL') {
+                                return true;
+                              }
+                            }
+                            return false;
+                          });
+                          return matched?.image || itemThumbImg;
+                        })();
+
+                        return (
+                          <tr className="hover:bg-slate-50/50">
+                            <td className="py-3 px-5 font-medium text-slate-800 text-sm">
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="h-10 w-10 flex-shrink-0 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center cursor-zoom-in transition-transform duration-200 hover:scale-105"
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const previewHeight = 240;
+                                    const previewWidth = 240;
+                                    const space = 12;
+                                    let x = rect.right + space;
+                                    let y = rect.top + rect.height / 2 - previewHeight / 2;
+                                    if (x + previewWidth > window.innerWidth) {
+                                      x = rect.left - previewWidth - space;
+                                    }
+                                    y = Math.max(10, Math.min(window.innerHeight - previewHeight - 10, y));
+                                    setHoveredProductImage({
+                                      src: productImg,
+                                      name: "Classic Crewneck Apparel",
+                                      x,
+                                      y
+                                    });
+                                  }}
+                                  onMouseLeave={() => setHoveredProductImage(null)}
+                                >
+                                  <img 
+                                    src={productImg} 
+                                    alt="Classic Crewneck Apparel" 
+                                    className="h-full w-full object-cover" 
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </div>
+                                <span>Classic Crewneck Apparel</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-5 font-mono text-xs text-slate-600">Charcoal / M</td>
+                            <td className="py-4 px-5 font-mono text-xs text-slate-600">APP-CRW-002</td>
+                            <td className="py-4 px-5 text-right font-mono font-medium text-slate-800 text-sm">{selectedOrderDetail.quantity}</td>
+                          </tr>
+                        );
+                      })()
                     )}
                   </tbody>
                 </table>
@@ -481,7 +631,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => onCreateLabel(selectedOrderDetail)}
+                                onClick={() => onCreateLabel(selectedOrderDetail, idx)}
                                 className="h-8 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 bg-white font-bold rounded-lg text-xs shadow-2xs transition focus:outline-none cursor-pointer inline-flex items-center select-none"
                               >
                                 View details
@@ -713,21 +863,22 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const rAddr = selectedOrderDetail.returnAddress || {
-                            name: 'mytest',
-                            companyLine: 'Company_address-1',
-                            addressLine: '715 Broadway2313, United States,',
-                            cityStateZip: 'NY, 20912, US'
-                          };
-                          setReturnName(rAddr.name || '');
-                          setReturnCompanyLine(rAddr.companyLine || '');
-                          setReturnAddressLine(rAddr.addressLine || '');
-                          setReturnCityStateZip(rAddr.cityStateZip || '');
+                          const rAddr: any = selectedOrderDetail.returnAddress || {};
+                          setReturnName(rAddr.name || 'mytest');
+                          setReturnCompanyLine(rAddr.companyLine || 'Company_address-1');
+                          setReturnAddressLine((rAddr.addressLine || '715 Broadway2313').replace(/,\s*$/, ''));
+                          setReturnAddress2(rAddr.address2 || '');
+                          setReturnCity(rAddr.city || 'New York');
+                          setReturnState(rAddr.state || 'New York');
+                          setReturnZip(rAddr.zip || '20912');
+                          setReturnCountry(rAddr.country || 'United States');
+                          setReturnPhone(rAddr.phone || '');
+                          setReturnEmail(rAddr.email || '');
                           setIsEditingReturnAddress(true);
                         }}
                         className="text-xs font-semibold text-brand-650 hover:text-brand-850 transition cursor-pointer"
                       >
-                        Edit Address
+                        Edit
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -751,55 +902,153 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                   </div>
 
                   {!isEditingReturnAddress ? (
-                    <div className="text-slate-800 space-y-0.5 font-sans leading-relaxed text-sm font-medium">
+                    <div className="text-slate-800 space-y-0.5 font-sans leading-relaxed pb-1 text-left text-sm font-medium">
                       <p className="font-bold text-slate-900">{selectedOrderDetail.returnAddress?.name || 'mytest'}</p>
-                      <p>{selectedOrderDetail.returnAddress?.companyLine || 'Company_address-1'}</p>
-                      <p>{selectedOrderDetail.returnAddress?.addressLine || '715 Broadway2313, United States,'}</p>
-                      <p>{selectedOrderDetail.returnAddress?.cityStateZip || 'NY, 20912, US'}</p>
+                      {selectedOrderDetail.returnAddress?.companyLine ? <p>{selectedOrderDetail.returnAddress.companyLine}</p> : null}
+                      <p>
+                        {selectedOrderDetail.returnAddress?.addressLine || '715 Broadway2313'}
+                        {selectedOrderDetail.returnAddress?.address2 ? `, ${selectedOrderDetail.returnAddress.address2}` : ''}
+                      </p>
+                      <p>
+                        {selectedOrderDetail.returnAddress?.city || 'New York'}
+                        {selectedOrderDetail.returnAddress?.state ? `, ${selectedOrderDetail.returnAddress.state}` : ''}
+                        {selectedOrderDetail.returnAddress?.zip ? ` ${selectedOrderDetail.returnAddress.zip}` : ''}
+                        {selectedOrderDetail.returnAddress?.country ? `, ${selectedOrderDetail.returnAddress.country}` : ''}
+                      </p>
+                      {selectedOrderDetail.returnAddress?.phone ? <p>{selectedOrderDetail.returnAddress.phone}</p> : null}
+                      {selectedOrderDetail.returnAddress?.email ? <p>{selectedOrderDetail.returnAddress.email}</p> : null}
                     </div>
                   ) : (
-                    <div className="space-y-3 pt-1 font-sans text-left text-xs">
+                    <div className="space-y-3 pb-1 text-xs">
+                      {/* Name Field */}
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Company / Name</label>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Name <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={returnName}
+                          placeholder="Name"
                           onChange={(e) => setReturnName(e.target.value)}
-                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
                         />
                       </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Company (Optional)</label>
-                        <input
-                          type="text"
-                          value={returnCompanyLine}
-                          onChange={(e) => setReturnCompanyLine(e.target.value)}
-                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
-                        />
+
+                      {/* Company & Email row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Company</label>
+                          <input
+                            type="text"
+                            value={returnCompanyLine}
+                            placeholder="Company"
+                            onChange={(e) => setReturnCompanyLine(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                          <input
+                            type="text"
+                            value={returnEmail}
+                            placeholder="Email"
+                            onChange={(e) => setReturnEmail(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
                       </div>
+
+                      {/* Phone & Country row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Phone</label>
+                          <input
+                            type="text"
+                            value={returnPhone}
+                            placeholder="Phone"
+                            onChange={(e) => setReturnPhone(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Country <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={returnCountry}
+                            placeholder="Country"
+                            onChange={(e) => setReturnCountry(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Address Line 1 */}
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Address line</label>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Address line 1 <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={returnAddressLine}
+                          placeholder="Address line 1"
                           onChange={(e) => setReturnAddressLine(e.target.value)}
-                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
                         />
                       </div>
+
+                      {/* Address Line 2 */}
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">City, State, Zip, Country</label>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Address line 2</label>
                         <input
                           type="text"
-                          value={returnCityStateZip}
-                          onChange={(e) => setReturnCityStateZip(e.target.value)}
-                          className="w-full h-9 px-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-slate-800 focus:outline-none transition font-medium"
+                          value={returnAddress2}
+                          placeholder="Address line 2"
+                          onChange={(e) => setReturnAddress2(e.target.value)}
+                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
                         />
+                      </div>
+
+                      {/* City & State row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">City <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={returnCity}
+                            placeholder="City"
+                            onChange={(e) => setReturnCity(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">ZIP / Postcode <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={returnZip}
+                            placeholder="ZIP / Postcode"
+                            onChange={(e) => setReturnZip(e.target.value)}
+                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium text-left"
+                          />
+                        </div>
+                      </div>
+
+                      {/* State selector */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">State / Province / Region</label>
+                        <select
+                          value={returnState}
+                          onChange={(e) => setReturnState(e.target.value)}
+                          className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 h-9 focus:outline-none cursor-pointer text-slate-700 font-sans font-medium"
+                        >
+                          <option value="">Select state / province / region</option>
+                          {US_STATES.map((stateOption) => (
+                            <option key={stateOption.code} value={stateOption.name}>
+                              {stateOption.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="border-t border-slate-100 my-9" />
+                <div className="border-t border-slate-100 my-4" />
 
                 {/* Ship Address */}
                 <div className="space-y-2 text-left">
@@ -835,7 +1084,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                         }}
                         className="text-xs font-semibold text-brand-650 hover:text-brand-850 transition cursor-pointer"
                       >
-                        Edit Address
+                        Edit
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -971,7 +1220,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                           </div>
                         </div>
 
-                        {/* Phone row */}
+                        {/* Phone & Country row */}
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Phone</label>
@@ -983,18 +1232,16 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                               className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
                             />
                           </div>
-                        </div>
-
-                        {/* Country Field */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Country <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            value={shipCountry}
-                            placeholder="Country"
-                            onChange={(e) => setShipCountry(e.target.value)}
-                            className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
-                          />
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Country <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={shipCountry}
+                              placeholder="Country"
+                              onChange={(e) => setShipCountry(e.target.value)}
+                              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 h-9 font-sans font-medium"
+                            />
+                          </div>
                         </div>
 
                         {/* Address Line 1 */}
@@ -1072,6 +1319,34 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
 
         </div>
       </div>
+
+      <AnimatePresence>
+        {hoveredProductImage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 5 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{
+              position: "fixed",
+              left: hoveredProductImage.x,
+              top: hoveredProductImage.y,
+              zIndex: 9999,
+              pointerEvents: "none",
+            }}
+            className="w-60 h-60 bg-white rounded-xl shadow-2xl border border-slate-200/85 p-1.5 overflow-hidden flex items-center justify-center select-none"
+          >
+            <div className="w-full h-full rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center border border-slate-100">
+              <img
+                src={hoveredProductImage.src}
+                alt={hoveredProductImage.name}
+                className="max-h-full max-w-full object-contain p-2"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -341,51 +341,62 @@ export function ProductTab({
           {/* Header row */}
           <thead>
             <tr className="bg-[#F8F9FA] text-slate-500 border-b border-slate-100 text-[11.5px] font-semibold uppercase tracking-wider whitespace-nowrap">
-              {activeTab === 'Product' && (
-                <>
-                  <th className="py-3 pl-8 pr-4 select-none font-sans w-[20%] text-left">Name</th>
-                  <th className="py-3 px-4 font-sans w-[20%] text-left">SKU</th>
-                  <th className="py-3 px-4 font-sans text-right w-[20%]">Incoming stock</th>
-                  <th className="py-3 px-4 font-sans w-[20%] text-left select-none"></th>
-                  <th className="py-3 px-4 font-sans text-left w-[20%]">Stock qty</th>
-                </>
-              )}
-              {activeTab === 'Type' && (
-                <>
-                  <th className="py-3 px-6 select-none font-sans w-[15%]">ID</th>
-                  <th className="py-3 px-6 font-sans w-[15%]">Icon</th>
-                  <th className="py-3 px-6 font-sans w-[25%]">Type name</th>
-                  <th className="py-3 px-6 font-sans w-[25%]">Created at</th>
-                  <th className="py-3 px-6 font-sans w-[20%]">Created by</th>
-                </>
-              )}
-              {activeTab === 'Style' && (
-                <>
-                  <th className="py-3 px-6 select-none font-sans">ID</th>
-                  <th className="py-3 px-6 font-sans">Product name</th>
-                  <th className="py-3 px-6 font-sans">Product style</th>
-                  <th className="py-3 px-6 font-sans">Type</th>
-                  <th className="py-3 px-6 font-sans">Created at</th>
-                  <th className="py-3 px-6 font-sans">Created by</th>
-                </>
-              )}
-              {activeTab === 'Color' && (
-                <>
-                  <th className="py-3 px-6 select-none font-sans">ID</th>
-                  <th className="py-3 px-6 font-sans">Color name</th>
-                  <th className="py-3 px-6 font-sans">Color Hex code</th>
-                  <th className="py-3 px-6 font-sans">Created at</th>
-                  <th className="py-3 px-6 font-sans">Created by</th>
-                </>
-              )}
-              {activeTab === 'Size' && (
-                <>
-                  <th className="py-3 px-6 select-none font-sans">ID</th>
-                  <th className="py-3 px-6 font-sans">Size name</th>
-                  <th className="py-3 px-6 font-sans">Created at</th>
-                  <th className="py-3 px-6 font-sans">Created by</th>
-                </>
-              )}
+              {(() => {
+                switch (activeTab) {
+                  case 'Product':
+                    return (
+                      <>
+                        <th className="py-3 pl-8 pr-4 select-none font-sans w-[30%] text-left">Name</th>
+                        <th className="py-3 px-4 font-sans w-[20%] text-left">SKU</th>
+                        <th className="py-3 px-4 font-sans text-right w-[15%]">Stock qty</th>
+                        <th className="py-3 px-4 font-sans w-[20%]"></th>
+                        <th className="py-3 px-4 font-sans text-left w-[15%]">Status</th>
+                      </>
+                    );
+                  case 'Type':
+                    return (
+                      <>
+                        <th className="py-3 px-6 select-none font-sans w-[15%]">ID</th>
+                        <th className="py-3 px-6 font-sans w-[15%]">Icon</th>
+                        <th className="py-3 px-6 font-sans w-[25%]">Type name</th>
+                        <th className="py-3 px-6 font-sans w-[25%]">Created at</th>
+                        <th className="py-3 px-6 font-sans w-[20%]">Created by</th>
+                      </>
+                    );
+                  case 'Style':
+                    return (
+                      <>
+                        <th className="py-3 px-6 select-none font-sans">ID</th>
+                        <th className="py-3 px-6 font-sans">Product name</th>
+                        <th className="py-3 px-6 font-sans">Product style</th>
+                        <th className="py-3 px-6 font-sans">Type</th>
+                        <th className="py-3 px-6 font-sans">Created at</th>
+                        <th className="py-3 px-6 font-sans">Created by</th>
+                      </>
+                    );
+                  case 'Color':
+                    return (
+                      <>
+                        <th className="py-3 px-6 select-none font-sans">ID</th>
+                        <th className="py-3 px-6 font-sans">Color name</th>
+                        <th className="py-3 px-6 font-sans">Color Hex code</th>
+                        <th className="py-3 px-6 font-sans">Created at</th>
+                        <th className="py-3 px-6 font-sans">Created by</th>
+                      </>
+                    );
+                  case 'Size':
+                    return (
+                      <>
+                        <th className="py-3 px-6 select-none font-sans">ID</th>
+                        <th className="py-3 px-6 font-sans">Size name</th>
+                        <th className="py-3 px-6 font-sans">Created at</th>
+                        <th className="py-3 px-6 font-sans">Created by</th>
+                      </>
+                    );
+                  default:
+                    return null;
+                }
+              })()}
             </tr>
           </thead>
 
@@ -412,14 +423,14 @@ export function ProductTab({
                       {product.sku.includes('\n') ? product.sku.split('\n')[1] : product.sku}
                     </td>
                     <td className="py-4 px-4 font-mono font-medium text-right whitespace-nowrap text-slate-700">
-                      {product.incomingStock}
+                      {product.stockQty.replace(/[^0-9]/g, '') || '0'}
                     </td>
-                    <td className="py-4 px-4 whitespace-nowrap"></td>
+                    <td className="py-4 px-4"></td>
                     <td className="py-4 px-4 font-sans text-left whitespace-nowrap">
                       {product.stockQty.toLowerCase().includes('out of stock') ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-100 whitespace-nowrap">Out of stock</span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 whitespace-nowrap">{product.stockQty}</span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 whitespace-nowrap">In stock</span>
                       )}
                     </td>
                   </tr>

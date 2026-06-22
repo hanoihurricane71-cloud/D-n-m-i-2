@@ -152,6 +152,7 @@ export interface OrderManagementItem {
     price?: string;
     labelLink?: string;
     printedDate?: string;
+    packedItems?: Array<{ sku: string; qty: number }>;
     senderDetails?: {
       name: string;
       company?: string;
@@ -171,6 +172,7 @@ export interface OrderManagementItem {
     };
   }>;
   internalNotes?: string;
+  insertType?: 'Thank You Card' | 'Gift Message' | 'Packing Slip';
   activityHistory?: Array<{
     id: string;
     date: string;
@@ -183,6 +185,13 @@ export interface OrderManagementItem {
     companyLine: string;
     addressLine: string;
     cityStateZip: string;
+    phone?: string;
+    address2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    email?: string;
   };
   shipAddress?: {
     name: string;

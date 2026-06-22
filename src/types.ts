@@ -118,7 +118,21 @@ export interface OrderManagementItem {
     labelLink?: string;
     printedDate?: string;
   };
+  shipments?: Array<{
+    trackingNumber: string;
+    carrier: string;
+    service: string;
+    shipDate: string;
+    shippingMethod?: string;
+    weight?: string;
+    size?: string;
+    price?: string;
+    labelLink?: string;
+    printedDate?: string;
+    packedItems?: Array<{ sku: string; qty: number }>;
+  }>;
   internalNotes?: string;
+  insertType?: 'Thank You Card' | 'Gift Message' | 'Packing Slip';
   activityHistory?: Array<{
     id: string;
     date: string;

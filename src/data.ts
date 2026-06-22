@@ -1113,13 +1113,40 @@ export const INITIAL_ORDERS: OrderManagementItem[] = [
       service: 'UPS Ground',
       shipDate: 'Jun 14, 2026',
       shippingMethod: 'UPS Ground',
-      weight: '12.4 lbs',
+      weight: '6.2 lbs',
       size: '15 x 12 x 10 in',
       price: '$14.50',
       labelLink: 'https://www.ups.com/assets/resources/images/zpl-label-sample.png',
       printedDate: 'Jun 14, 2026 10:15 AM'
     },
+    shipments: [
+      {
+        trackingNumber: '1Z999AA10123456784',
+        carrier: 'UPS',
+        service: 'UPS Ground',
+        shipDate: 'Jun 14, 2026',
+        shippingMethod: 'UPS Ground',
+        weight: '6.2 lbs',
+        size: '15 x 12 x 10 in',
+        price: '$14.50',
+        labelLink: 'https://www.ups.com/assets/resources/images/zpl-label-sample.png',
+        printedDate: 'Jun 14, 2026 10:15 AM'
+      },
+      {
+        trackingNumber: '1Z999AA10198765432',
+        carrier: 'FedEx',
+        service: 'FedEx Home Delivery',
+        shipDate: 'Jun 14, 2026',
+        shippingMethod: 'FedEx Home',
+        weight: '6.2 lbs',
+        size: '12 x 10 x 8 in',
+        price: '$12.80',
+        labelLink: 'https://www.cups.com/label-example.png',
+        printedDate: 'Jun 14, 2026 10:18 AM'
+      }
+    ],
     internalNotes: 'Customer requested front door delivery. Confirmed delivered on porch.',
+    insertType: 'Thank You Card',
     activityHistory: [
       { id: 'act1_1', date: 'Jun 14, 2026 15:30', action: 'Delivered', performedBy: 'UPS System', notes: 'Package left at front door' },
       { id: 'act1_2', date: 'Jun 14, 2026 08:15', action: 'Out for Delivery', performedBy: 'UPS System' },
@@ -1156,6 +1183,7 @@ export const INITIAL_ORDERS: OrderManagementItem[] = [
       printedDate: 'Jun 15, 2026 09:30 AM'
     },
     internalNotes: 'Customs paperwork attached and verified by compliance officer.',
+    insertType: 'Gift Message',
     activityHistory: [
       { id: 'act2_1', date: 'Jun 15, 2026 18:00', action: 'Departed Facility', performedBy: 'FedEx System', notes: 'Anchorage, AK exchange facility' },
       { id: 'act2_2', date: 'Jun 15, 2026 11:00', action: 'Picked Up', performedBy: 'FedEx System' },
@@ -1181,6 +1209,7 @@ export const INITIAL_ORDERS: OrderManagementItem[] = [
       { productName: 'Classic Polo Shirt', styleColor: '5000 / Red', sku: 'PL-RED-L', quantity: 140 }
     ],
     internalNotes: 'Awaiting shipping manifest release from the secondary floor.',
+    insertType: 'Packing Slip',
     activityHistory: [
       { id: 'act3_1', date: 'Jun 15, 2026 14:22', action: 'Order Approved', performedBy: 'CS Staff Hiep' },
       { id: 'act3_2', date: 'Jun 15, 2026 14:15', action: 'Order Submitted', performedBy: 'Phoenix Baker' }

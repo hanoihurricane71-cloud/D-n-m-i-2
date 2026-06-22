@@ -1374,7 +1374,7 @@ export function LabelTab({ products = [] }: { products?: any[] } = {}) {
               </div>
               <div className="px-6 py-5 space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {['Thank You Card', 'Gift Message', 'Promo Insert'].map(t => (
+                  {['Packing Slip', 'Thank You Card', 'Gift Message'].map(t => (
                     <button key={t} type="button" onClick={() => setInsertType(t)}
                       className={`px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition ${insertType === t ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                       {t}
@@ -1382,13 +1382,13 @@ export function LabelTab({ products = [] }: { products?: any[] } = {}) {
                   ))}
                 </div>
                 <textarea value={insertMsg} onChange={e => setInsertMsg(e.target.value)} rows={4}
-                  placeholder={insertType === 'Thank You Card' ? 'Thank you for your order!' : insertType === 'Gift Message' ? 'Wishing you joy…' : 'Use code SAVE10 for 10% off!'}
+                  placeholder={insertType === 'Thank You Card' ? 'Thank you for your order!' : insertType === 'Gift Message' ? 'Wishing you joy…' : 'Standard packing slip detail...'}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 resize-none" />
               </div>
               <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsInsertOpen(false)} className="px-4 h-9 border border-slate-200 bg-white rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">Cancel</button>
                 <button type="button" disabled={!insertMsg.trim()} onClick={() => {
-                  const abbr = insertType === 'Thank You Card' ? 'TU' : insertType === 'Gift Message' ? 'GM' : 'PI';
+                  const abbr = insertType === 'Thank You Card' ? 'TU' : insertType === 'Gift Message' ? 'GM' : 'PS';
                   setInsertLabels(prev => prev.find(l => l.abbr === abbr) ? prev : [...prev, { abbr, label: insertType }]);
                   showToast('Insert saved!');
                   setIsInsertOpen(false);
