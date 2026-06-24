@@ -261,7 +261,6 @@ export function OrderManagementTab({
             style={{ top: '50%', left: '75%' }}
           />
         </div>
-        </div>
 
         {/* Reset Filters */}
         {hasActiveFilters && (
@@ -287,6 +286,7 @@ export function OrderManagementTab({
             <span>Reset</span>
           </button>
         )}
+        </div>
       </div>
 
       {/* Table / List Area */}

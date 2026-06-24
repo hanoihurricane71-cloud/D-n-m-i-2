@@ -117,6 +117,7 @@ export interface OrderManagementItem {
     price?: string;
     labelLink?: string;
     printedDate?: string;
+    status?: string;
   };
   shipments?: Array<{
     trackingNumber: string;
@@ -129,6 +130,7 @@ export interface OrderManagementItem {
     price?: string;
     labelLink?: string;
     printedDate?: string;
+    status?: string;
     packedItems?: Array<{ sku: string; qty: number }>;
   }>;
   internalNotes?: string;

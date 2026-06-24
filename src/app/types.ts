@@ -123,6 +123,7 @@ export interface OrderManagementItem {
     price?: string;
     labelLink?: string;
     printedDate?: string;
+    status?: string;
     senderDetails?: {
       name: string;
       company?: string;
@@ -152,6 +153,7 @@ export interface OrderManagementItem {
     price?: string;
     labelLink?: string;
     printedDate?: string;
+    status?: string;
     packedItems?: Array<{ sku: string; qty: number }>;
     senderDetails?: {
       name: string;

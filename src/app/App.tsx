@@ -16,6 +16,7 @@ import {
   HelpCircle, 
   SlidersHorizontal, 
   RotateCcw,
+  RotateCw,
   Sparkles,
   Github,
   AlertCircle,
@@ -62,6 +63,26 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const itemThumbImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2YzZjRmNiIgLz48cmVjdCB4PSI3MCIgeT0iMTEwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjI4MCIgcng9IjMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5YmEzYWYiIHN0cm9rZS13aWR0aD0iMjAiIC8+PGNpcmNsZSBjeD0iMzEwIiBjeT0iMTkwIiByPSIzNSIgZmlsbD0iIzliYTNhZiIgLz48cG9seWdvbiBwb2ludHM9IjgwLDM4MCAyMTAsMTk1IDMxNSwzODAiIGZpbGw9IiM5YmEzYWYiIC8+PHBvbHlnb24gcG9pbnRzPSIyMTUsMzgwIDMyNSwyMzAgNDIwLDM4MCIgZmlsbD0iIzliYTNhZiIgLz48L3N2Zz4=";
 
+const slideVariants: any = {
+  enter: (dir: number) => ({
+    x: dir > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (dir: number) => ({
+    x: dir < 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+};
+
+const slideTransition: any = {
+  x: { type: 'tween', duration: 0.22, ease: 'easeInOut' },
+  opacity: { duration: 0.15 },
+};
+
 import { Product, TabType, PurchaseOrder, PurchaseOrderItem, AdditionItem, LocationItem, LocationHistoryItem, OrderManagementItem, StoreRowItem } from './types';
 import { 
   INITIAL_PRODUCTS, 
@@ -91,6 +112,59 @@ import { PurchaseOrderTab } from './components/PurchaseOrderTab';
 import { AdditionTab } from './components/AdditionTab';
 import { LocationTab } from './components/LocationTab';
 import { StoreManagementTab } from './components/StoreManagementTab';
+
+export const CarrierLogo = ({ carrier, className = "" }: { carrier: string; className?: string }) => {
+  const clean = (carrier || '').trim().toUpperCase();
+  if (clean === 'USPS') {
+    return (
+      <div className={`flex items-center shrink-0 justify-center bg-slate-50 border border-slate-200/80 rounded-lg p-1 h-9 w-12 ${className}`}>
+        <svg className="h-full w-full object-contain" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 8 H16 L12 28 H0 L2 8 Z" fill="#003366" />
+          <path d="M8 8 L22 8 L18 28 L4 28 Z" fill="#E31B23" />
+          <text x="26" y="27" fill="#003366" fontSize="23" fontWeight="900" fontStyle="italic" fontFamily='"Inter", sans-serif'>USPS</text>
+        </svg>
+      </div>
+    );
+  }
+  if (clean === 'UPS') {
+    return (
+      <div className={`flex items-center shrink-0 justify-center bg-slate-50 border border-slate-200/80 rounded-lg p-1 h-9 w-12 ${className}`}>
+        <svg className="h-full w-full object-contain" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C17.3 0 21.6 1.7 21.6 8.3C21.6 15.3 16.2 22.8 12 25.6C7.8 22.8 2.4 15.3 2.4 8.3C2.4 1.7 6.7 0 12 0Z" fill="#351C15" />
+          <path d="M12 2.2C15.8 2.2 19.4 3.4 19.4 8.3C19.4 13.9 15.2 20.3 12 22.7C8.8 20.3 4.6 13.9 4.6 8.3C4.6 3.4 8.2 2.2 12 2.2Z" fill="#FFC72C" />
+          <text x="12" y="14" fill="#351C15" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily='"Inter", sans-serif' letterSpacing="-0.5">ups</text>
+        </svg>
+      </div>
+    );
+  }
+  if (clean === 'DHL') {
+    return (
+      <div className={`flex items-center shrink-0 justify-center bg-slate-50 border border-slate-200/80 rounded-lg p-0.5 h-9 w-12 ${className}`}>
+        <svg className="h-full w-full object-contain" viewBox="0 0 80 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="24" rx="4" fill="#FFCC00" />
+          <text x="40" y="17" fill="#D4001A" fontSize="15" fontWeight="900" fontStyle="italic" textAnchor="middle" fontFamily='"Inter", sans-serif' letterSpacing="0.5">DHL</text>
+          <line x1="5" y1="8" x2="20" y2="8" stroke="#D4001A" strokeWidth="1.5" />
+          <line x1="5" y1="12" x2="20" y2="12" stroke="#D4001A" strokeWidth="1.5" />
+          <line x1="5" y1="16" x2="20" y2="16" stroke="#D4001A" strokeWidth="1.5" />
+          <line x1="60" y1="8" x2="75" y2="8" stroke="#D4001A" strokeWidth="1.5" />
+          <line x1="60" y1="12" x2="75" y2="12" stroke="#D4001A" strokeWidth="1.5" />
+          <line x1="60" y1="16" x2="75" y2="16" stroke="#D4001A" strokeWidth="1.5" />
+        </svg>
+      </div>
+    );
+  }
+  if (clean === 'FEDEX') {
+    return (
+      <div className={`flex items-center shrink-0 justify-center bg-slate-50 border border-slate-200/80 rounded-lg p-0.5 h-9 w-12 ${className}`}>
+        <svg className="h-full w-full object-contain" viewBox="0 0 80 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="4" y="18" fill="#4D148C" fontSize="21" fontWeight="900" fontFamily='"Inter", sans-serif' letterSpacing="-1.5">Fed</text>
+          <text x="41" y="18" fill="#FF6600" fontSize="21" fontWeight="900" fontFamily='"Inter", sans-serif' letterSpacing="-1.5">Ex</text>
+        </svg>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const getServicesList = (weight: number, l: number, w: number, h: number, carrier: string = 'ALL') => {
   const scale = (weight / 47.92) * 0.4 + ((l * w * h) / (7 * 5 * 14)) * 0.6;
@@ -128,8 +202,12 @@ export const getServicesList = (weight: number, l: number, w: number, h: number,
   } else {
     return [
       { name: 'USPS GroundAdvantage - NSA Account', est: 'Est delivery 3 days', price: `$${usps1}`, carrier: 'USPS' },
+      { name: 'USPS Priority - NSA Account', est: 'Est delivery 2 days', price: `$${usps2}`, carrier: 'USPS' },
       { name: 'UPS Ground - NSA Account', est: 'Est delivery 3 days', price: `$${ups1}`, carrier: 'UPS' },
-      { name: 'DHL Express Worldwide', est: 'Est delivery 2-3 days', price: `$${dhl1}`, carrier: 'DHL' }
+      { name: 'UPS Next Day Air Saver', est: 'Est delivery 1 day', price: `$${ups2}`, carrier: 'UPS' },
+      { name: 'DHL Express Worldwide', est: 'Est delivery 2-3 days', price: `$${dhl1}`, carrier: 'DHL' },
+      { name: 'FedEx Home Delivery', est: 'Est delivery 3 days', price: `$${fedex1}`, carrier: 'FedEx' },
+      { name: 'FedEx 2Day', est: 'Est delivery 2 days', price: `$${fedex2}`, carrier: 'FedEx' }
     ];
   }
 };
@@ -588,6 +666,9 @@ export default function App() {
   // User Profile Dropdown state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Connection Stores State
   const [stores, setStores] = useState<StoreRowItem[]>([
@@ -968,6 +1049,25 @@ export default function App() {
 
   // Order Management states
   const [orders, setOrders] = useState<OrderManagementItem[]>(INITIAL_ORDERS);
+
+  const getPreviousHsCode = () => {
+    // 1. Try localStorage
+    const local = localStorage.getItem('last_used_hs_code');
+    if (local) return local;
+
+    // 2. Try looking in existing orders
+    for (const o of orders) {
+      if (o.shipments) {
+        for (const s of o.shipments) {
+          if ((s as any).hsCode) return (s as any).hsCode;
+          if ((s as any).customsHsCode) return (s as any).customsHsCode;
+        }
+      }
+    }
+
+    // 3. Fallback to a default one
+    return '6109.10';
+  };
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [orderProductQuery, setOrderProductQuery] = useState('');
   const [orderStyleFilter, setOrderStyleFilter] = useState('All Styles');
@@ -1014,6 +1114,12 @@ export default function App() {
   const [initialInternalNote, setInitialInternalNote] = useState('');
   const [internalNoteDraft, setInternalNoteDraft] = useState('');
   const [hoveredProductImage, setHoveredProductImage] = useState<{ url: string; x: number; y: number } | null>(null);
+  const [labelStep, setLabelStep] = useState<1 | 2>(1);
+  const [slideDirection, setSlideDirection] = useState<number>(1);
+  const [generatedShipment, setGeneratedShipment] = useState<any | null>(null);
+  const [previewZoomForLabel, setPreviewZoomForLabel] = useState(100);
+  const [previewRotationForLabel, setPreviewRotationForLabel] = useState(0);
+  const printIframeRefForLabel = useRef<HTMLIFrameElement>(null);
 
   const modalExistingShipments = selectedOrderDetail
     ? (selectedOrderDetail.shipments && selectedOrderDetail.shipments.length > 0
@@ -1021,6 +1127,60 @@ export default function App() {
       : (selectedOrderDetail.shipmentInfo ? [selectedOrderDetail.shipmentInfo] : []))
     : [];
   const isCurrentTabSaved = activeShipmentTabIdx < modalExistingShipments.length;
+
+  const getLabelPreviewHtml = (shp: any) => {
+    if (!shp) return '';
+    const trackingNo = shp.trackingNumber || '1LSDBVU000ZLLNI';
+    const carrierName = shp.carrier || 'UPS';
+    const senderName = shp.senderDetails?.name || 'SwiftPOD LLC';
+    const senderComp = shp.senderDetails?.company || 'Main Depot Terminal';
+    const senderAddr = shp.senderDetails?.address || '2070 S 7th St. Ste E, San Jose, CA 95112';
+
+    const recName = shp.recipientDetails ? `${shp.recipientDetails.firstName} ${shp.recipientDetails.lastName}` : 'Demi Wilkinson';
+    const recComp = shp.recipientDetails?.company || '';
+    const recAddr1 = shp.recipientDetails?.address1 || 'Store Boutique (Phoenix)';
+    const recCityStateZip = shp.recipientDetails ? `${shp.recipientDetails.city || ''}, ${shp.recipientDetails.zip || ''}, ${shp.recipientDetails.country || 'United States'}` : 'United States';
+
+    return `
+      <html>
+        <head>
+          <title>Print Shipping Label</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #fff; }
+            .box { width: 4in; height: 6in; border: 3px solid #000; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+            .text-bold { font-weight: bold; }
+            .title { font-size: 24px; font-weight: 900; border-bottom: 5px solid #000; padding-bottom: 5px; text-transform: uppercase; }
+            .barcode { margin-top: 15px; text-align: center; }
+            .barcode-lines { height: 65px; background-color: #000; background-image: repeating-linear-gradient(90deg, #fff, #fff 1.5px, #000 1.5px, #000 5.5px); margin: 6px 0; }
+            .barcode-text { font-family: monospace; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+          </style>
+        </head>
+        <body>
+          <div class="box" style="width: 4in; height: 6in; border: 3px solid #000; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="title" style="font-size: 24px; font-weight: 900; border-bottom: 5px solid #000; padding-bottom: 5px; text-transform: uppercase;">\${carrierName} GROUND</div>
+            <div style="font-size: 11px; margin-top: 15px;">
+              <div class="text-bold" style="font-weight: bold;">SENDER:</div>
+              <div>\${senderName}</div>
+              <div>\${senderComp}</div>
+              <div>\${senderAddr}</div>
+            </div>
+            <div style="font-size: 11px; margin-top: 20px;">
+              <div class="text-bold" style="font-weight: bold;">SHIP TO:</div>
+              <div>\${recName}</div>
+              <div>\${recComp}</div>
+              <div>\${recAddr1}</div>
+              <div>\${recCityStateZip}</div>
+            </div>
+            <div style="border-top: 2px solid #000; padding-top: 15px; margin-top: 30px; font-size: 12px; font-family: monospace; text-align: center;">
+              TRACKING #: \${trackingNo}
+              <div class="barcode-lines" style="height: 65px; background-color: #000; background-image: repeating-linear-gradient(90deg, #fff, #fff 1.5px, #000 1.5px, #000 5.5px); margin: 6px 0;"></div>
+              <div class="barcode-text" style="font-family: monospace; font-size: 11px; font-weight: bold; letter-spacing: 1px;">*(1Z) \${trackingNo}*</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
 
   useEffect(() => {
     setPendingShippingMethod(null);
@@ -1033,6 +1193,9 @@ export default function App() {
   useEffect(() => {
     if (isLabelPopupOpen) {
       setShowAddressDetails(false);
+      setPreviewZoomForLabel(100);
+      setPreviewRotationForLabel(0);
+      setLabelStep(1);
     }
   }, [isLabelPopupOpen]);
 
@@ -1111,9 +1274,10 @@ export default function App() {
       setSenderZip('95112');
 
       const isIntl = order.destinationType === 'International' || order.destination?.toLowerCase().includes('tokyo');
+      const prevHsCode = getPreviousHsCode();
       setLabelFormCountry(isIntl ? 'Japan' : 'United States');
       setLabelFormDestinationType(isIntl ? 'International' : 'Domestic');
-      setLabelFormHsCode('');
+      setLabelFormHsCode(isIntl ? prevHsCode : '');
       setLabelFormAddress1(order.destination || '2070 S 7th St. Ste E');
       setLabelFormAddress2('');
       setLabelFormCity(isIntl ? 'Tokyo' : 'San Jose');
@@ -1124,7 +1288,7 @@ export default function App() {
         : 'Premium Organic Tee';
       setLabelFormCustomsRefId('REF-' + order.orderNumber + '-01');
       setLabelFormCustomsCountry(isIntl ? 'Japan' : 'United States');
-      setLabelFormCustomsHsCode('6109.10');
+      setLabelFormCustomsHsCode(isIntl ? prevHsCode : '6109.10');
       setLabelFormCustomsNetWeight('6.2');
       setLabelFormCustomsPrice('14.50');
       setLabelFormCustomsQty('1');
@@ -1146,7 +1310,10 @@ export default function App() {
         qtys['SKU-G640-BLK-S-01'] = order.quantity || 1;
       }
       setShipmentItemQuantities(qtys);
-      setShipmentItemQuantitiesByTab({ 0: qtys });
+      setShipmentItemQuantitiesByTab(prev => ({
+        ...prev,
+        [activeIdx]: qtys
+      }));
       setCustomShipmentItems([]);
 
       setLabelFormPackages([{
@@ -2534,6 +2701,143 @@ export default function App() {
     }
   }, [activeFilteredCount, totalPages, currentPage]);
 
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#F4F5F7] font-sans text-slate-800 flex items-center justify-center p-4 antialiased select-none">
+        {/* Soft Toast Notification Handler */}
+        <div className="fixed top-4 right-4 z-[9999] pointer-events-none space-y-2">
+          <AnimatePresence>
+            {toastMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`
+                  pointer-events-auto p-4 rounded-xl shadow-lg border flex items-center gap-3 max-w-sm
+                  bg-brand-50 border-brand-200 text-brand-900
+                `}
+              >
+                <div className="h-8 w-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4.5 w-4.5" />
+                </div>
+                <div className="flex-1 text-sm font-medium">
+                  {toastMessage.text}
+                </div>
+                <button
+                  onClick={() => setToastMessage(null)}
+                  className="text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-150 p-8 flex flex-col text-center relative"
+        >
+          {/* Logo & Platform Name */}
+          <div className="flex flex-col items-center gap-3 mb-6">
+            <div className="h-14 w-14 logo-gradient rounded-2xl flex items-center justify-center text-white font-extrabold shadow-md relative overflow-hidden shrink-0">
+              <span className="relative z-10 text-xl font-display">P</span>
+            </div>
+            <div>
+              <span className="font-display font-bold text-2xl tracking-tight logo-text-gradient block">PAP system</span>
+              <p className="text-xs text-slate-500 mt-1 font-medium font-sans">
+                Manage swift shipping & label operations
+              </p>
+            </div>
+          </div>
+
+          {/* Form */}
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              setLoginLoading(true);
+              setTimeout(() => {
+                setLoginLoading(false);
+                setIsLoggedIn(true);
+                triggerToast('Welcome back, Hiep Tran!', 'success');
+              }, 800);
+            }}
+            className="space-y-5 text-left"
+          >
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider font-sans">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  defaultValue="admin@swiftpod.com"
+                  className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 rounded-xl text-sm transition outline-none font-sans font-medium text-slate-800"
+                  placeholder="name@company.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider font-sans">
+                  Password
+                </label>
+                <a href="#" onClick={(e) => { e.preventDefault(); triggerToast('Reset password link sent!', 'success'); }} className="text-xs font-bold text-brand-600 hover:text-brand-700 font-sans">
+                  Forgot?
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  defaultValue="••••••••"
+                  className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 rounded-xl text-sm transition outline-none font-sans text-slate-800"
+                  placeholder="Enter password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                >
+                  <Eye className="h-4.5 w-4.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 select-none">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" defaultChecked className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <span className="text-xs font-semibold text-slate-600 font-sans">Remember me</span>
+              </label>
+              <span className="text-xs font-semibold text-slate-400 font-sans">v2.4.1</span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full h-11 btn-primary-gradient text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-75 disabled:cursor-not-allowed select-none mt-2"
+            >
+              {loginLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                "Sign In"
+              )}
+            </button>
+          </form>
+
+          {/* Bottom credentials hint */}
+          <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-medium font-sans">
+            <span>Secured operation environment for SwiftPOD LLC</span>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F4F5F7] font-sans text-slate-800 flex flex-col antialiased">
       
@@ -2644,7 +2948,8 @@ export default function App() {
                           type="button"
                           onClick={() => {
                             setIsUserDropdownOpen(false);
-                            setIsLogoutConfirmOpen(true);
+                            setIsLoggedIn(false);
+                            triggerToast('Logged out successfully', 'success');
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left font-sans"
                         >
@@ -2702,7 +3007,7 @@ export default function App() {
       <main className="flex-1 p-4 lg:p-6 flex flex-col gap-6 overflow-hidden max-w-full w-full">
         
         {/* Soft Toast Notification Animation Handler */}
-        <div className="fixed top-4 right-4 z-50 pointer-events-none space-y-2">
+        <div className="fixed top-4 right-4 z-[9999] pointer-events-none space-y-2">
           <AnimatePresence>
             {toastMessage && (
               <motion.div
@@ -2769,6 +3074,9 @@ export default function App() {
                   setLabelFormOrderNo(order.orderNumber || '');
                   setLabelFormClient(order.customerStore || 'Olivia Rhye Store');
                   setLabelFormCurrency('USD');
+                  setSlideDirection(1);
+                  setLabelStep(1);
+                  setGeneratedShipment(null);
                   
                   const existingShipments = order.shipments && order.shipments.length > 0
                     ? order.shipments
@@ -2779,9 +3087,9 @@ export default function App() {
                     : ['Shipment 1'];
                   
                   setShipmentTabs(tabs);
-                  const activeIdx = shipmentActiveIdx !== undefined && shipmentActiveIdx >= 0 && shipmentActiveIdx < tabs.length
+                  const activeIdx = shipmentActiveIdx !== undefined && shipmentActiveIdx >= 0 && shipmentActiveIdx < existingShipments.length
                     ? shipmentActiveIdx
-                    : 0;
+                    : existingShipments.length;
                   setActiveShipmentTabIdx(activeIdx);
                   
                   loadShipmentFields(order, activeIdx);
@@ -4355,7 +4663,7 @@ export default function App() {
                                    </div>
                                  ) : (
                                    <div className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded-md p-1.5 px-3">
-                                     <span className="text-[11px] text-slate-500">Need to copy-paste the whole address?</span>
+
                                      <button
                                        type="button"
                                        onClick={() => setIsPasteAddressOpen(true)}
@@ -4920,7 +5228,7 @@ export default function App() {
                             const isIntl = selectedOrderDetail.destinationType === 'International' || selectedOrderDetail.destination?.toLowerCase().includes('tokyo');
                             setLabelFormCountry(isIntl ? 'Japan' : 'United States');
                             setLabelFormDestinationType(isIntl ? 'International' : 'Domestic');
-                            setLabelFormHsCode('');
+                            setLabelFormHsCode(isIntl ? getPreviousHsCode() : '');
                             setLabelFormAddress1(selectedOrderDetail.destination || '2070 S 7th St. Ste E');
                             setLabelFormAddress2('');
                             setLabelFormCity(isIntl ? 'Tokyo' : 'San Jose');
@@ -4931,7 +5239,7 @@ export default function App() {
                               : 'Premium Organic Tee';
                             setLabelFormCustomsRefId('REF-' + selectedOrderDetail.orderNumber + '-01');
                             setLabelFormCustomsCountry(isIntl ? 'Japan' : 'United States');
-                            setLabelFormCustomsHsCode('6109.10');
+                            setLabelFormCustomsHsCode(isIntl ? getPreviousHsCode() : '6109.10');
                             setLabelFormCustomsNetWeight('6.2');
                             setLabelFormCustomsPrice('14.50');
                             setLabelFormCustomsQty('1');
@@ -4954,7 +5262,10 @@ export default function App() {
                               qtys['SKU-G640-BLK-S-01'] = selectedOrderDetail.quantity || 1;
                             }
                             setShipmentItemQuantities(qtys);
+                            setShipmentItemQuantitiesByTab({ 0: qtys });
                             setCustomShipmentItems([]);
+                            setShipmentTabs(['Shipment 1']);
+                            setActiveShipmentTabIdx(0);
 
                             setLabelFormPackages([{
                               index: 1,
@@ -4969,7 +5280,7 @@ export default function App() {
                             
                             setIsLabelPopupOpen(true);
                           }}
-                          className="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-brand-100"
+                          className="w-full h-10 btn-primary-gradient text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                         >
                           Create Shipping Label
                         </button>
@@ -5035,37 +5346,39 @@ export default function App() {
               className="relative bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-150 z-[101] font-sans flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                <span className="text-[13px] font-bold text-slate-805 select-none tracking-tight">Confirm Refund</span>
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white select-none">
+                <h2 className="text-base font-bold text-slate-950 font-sans">
+                  Confirm Refund
+                </h2>
                 <button
                   type="button"
                   onClick={() => setIsVoidConfirmOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="p-5 select-none text-left">
-                <p className="text-[11.5px] text-slate-705 leading-normal font-medium">
+              <div className="px-6 py-5 select-none text-left">
+                <p className="text-sm text-slate-600 leading-normal font-medium font-sans">
                   Do you want to refund order?
                 </p>
               </div>
 
               {/* Footer Buttons */}
-              <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-50 bg-slate-50/50 text-xs font-bold">
+              <div className="px-6 py-3.5 border-t border-slate-100 bg-white flex items-center justify-end gap-3 select-none shrink-0 font-sans">
                 <button
                   type="button"
                   onClick={() => setIsVoidConfirmOpen(false)}
-                  className="px-4 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-md transition cursor-pointer flex items-center justify-center font-semibold"
+                  className="h-9 px-4 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleVoidShipment}
-                  className="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition cursor-pointer flex items-center justify-center font-semibold shadow-xs"
+                  className="h-9 px-5 btn-danger-gradient text-white font-semibold rounded-lg text-xs shadow-xs transition cursor-pointer"
                 >
                   Confirm
                 </button>
@@ -6659,16 +6972,17 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               onClick={() => setIsLabelPopupOpen(false)}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
  
             {/* Elevated Full Width Bottom Sheet content panel */}
             <motion.div
-              initial={{ y: "100%", opacity: 0.5 }}
+              initial={{ y: "100%", opacity: 0.8 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0.5 }}
-              transition={{ type: "spring", damping: 28, stiffness: 220 }}
+              exit={{ y: "100%", opacity: 0.8 }}
+              transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
               className={`relative w-full ${showAddressDetails ? 'max-w-7xl' : 'max-w-3xl'} h-[94vh] bg-white rounded-t-2xl shadow-2xl overflow-hidden flex flex-col border-t border-x border-slate-200 z-50 mx-auto font-sans text-xs transition-all duration-300`}
             >
               {/* Sheet Header */}
@@ -6677,89 +6991,14 @@ export default function App() {
                   <h2 className="text-base font-bold text-slate-950">
                     Shipping label
                   </h2>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <p className="text-xs text-slate-500 font-medium">Order: #{labelFormOrderNo}</p>
-                    {selectedOrderDetail?.insertType && (
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-tight border ${
-                        selectedOrderDetail.insertType === 'Thank You Card'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : selectedOrderDetail.insertType === 'Gift Message'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}>
-                        {selectedOrderDetail.insertType}
-                      </span>
-                    )}
+                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 font-medium font-sans">
+                    <span>Order: #{labelFormOrderNo}</span>
                   </div>
                 </div>
 
-                {/* Header Actions: Print toggle dropdown & Close button */}
-                <div className="flex items-center gap-3">
-                  {/* Print Selector Dropdown (Shown only when order has an insert) */}
-                  {selectedOrderDetail?.insertType && (
-                    <div className="relative inline-block text-left">
-                      <button
-                        type="button"
-                        onClick={() => setIsHeaderPrintDropdownOpen(!isHeaderPrintDropdownOpen)}
-                        className="h-9 px-3.5 border border-slate-200 hover:bg-slate-50 text-slate-700 bg-white font-semibold rounded-lg text-xs shadow-2xs transition focus:outline-none cursor-pointer inline-flex items-center gap-1.5 select-none"
-                      >
-                        <span>Print insert(s)</span>
-                        <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
-                      </button>
-
-                      {isHeaderPrintDropdownOpen && (
-                        <div className="absolute right-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-2 z-[110] text-[10px] animate-in fade-in duration-100 font-sans">
-                          <div className="px-3.5 pb-1 mb-1 border-b border-slate-50">
-                            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Select Insert</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHeaderPrintSelection('Packing Slip');
-                              setIsHeaderPrintDropdownOpen(false);
-                              triggerToast('Preparing Packing Slip for print...', 'info');
-                              setTimeout(() => {
-                                window.print();
-                              }, 300);
-                            }}
-                            className={`w-full text-left px-3.5 py-1.5 hover:bg-slate-50 font-medium flex items-center justify-between cursor-pointer ${headerPrintSelection === 'Packing Slip' ? 'text-brand-600 bg-brand-50/50 font-semibold text-brand-600' : 'text-slate-700'}`}
-                          >
-                            <span>Packing Slip</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHeaderPrintSelection('Thank You Card');
-                              setIsHeaderPrintDropdownOpen(false);
-                              triggerToast('Preparing Thank You Card for print...', 'info');
-                              setTimeout(() => {
-                                window.print();
-                              }, 300);
-                            }}
-                            className={`w-full text-left px-3.5 py-1.5 hover:bg-slate-50 font-medium flex items-center justify-between cursor-pointer ${headerPrintSelection === 'Thank You Card' ? 'text-brand-600 bg-brand-50/50 font-semibold text-brand-600' : 'text-slate-700'}`}
-                          >
-                            <span>Thank You Card</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHeaderPrintSelection('Gift Message');
-                              setIsHeaderPrintDropdownOpen(false);
-                              triggerToast('Preparing Gift Message for print...', 'info');
-                              setTimeout(() => {
-                                window.print();
-                              }, 300);
-                            }}
-                            className={`w-full text-left px-3.5 py-1.5 hover:bg-slate-50 font-medium flex items-center justify-between cursor-pointer ${headerPrintSelection === 'Gift Message' ? 'text-brand-600 bg-brand-50/50 font-semibold text-brand-600' : 'text-slate-700'}`}
-                          >
-                            <span>Gift Message</span>
-                          </button>
-
-                        </div>
-                      )}
-                    </div>
-                  )}
-
+                {/* Header Actions: Close button & Toggle Address Details */}
+                <div className="flex items-center gap-3 font-sans">
+                  {/* Hidden Edit Address button per request */}
                   <button
                     type="button"
                     onClick={() => setIsLabelPopupOpen(false)}
@@ -6770,94 +7009,145 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Hidden shipment tabs per user request */}
+
               {/* SHEET WORKSPACE: Side Panel & Scrollable details */}
-              <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
-                
-                {/* INTERACTIVE LEFT SIDEBAR: Shipments Tracker */}
-                <div className="w-[180px] border-r border-slate-100 flex flex-col bg-slate-50/50 py-4 h-full select-none">
-                  <div className="px-4 pb-2 flex items-center justify-between border-b border-slate-200/60 mb-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Shipments</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (shipmentTabs.length >= 5) {
-                          triggerToast('Maximum 5 shipments allowed per layout constraints', 'info');
-                          return;
-                        }
-                        const nextTabIdx = shipmentTabs.length;
-                        const newTab = `Shipment ${nextTabIdx + 1}`;
-                        
-                        // Dynamically compute remaining quantities for new tab
-                        const newTabQtys: Record<string, number> = {};
-                        const orderSKUsToCalc = selectedOrderDetail 
-                          ? (selectedOrderDetail.orderItems && selectedOrderDetail.orderItems.length > 0 
-                              ? selectedOrderDetail.orderItems 
-                              : [{ productName: 'Classic Crewneck Hoodie', sku: 'SKU-G640-BLK-S-01', quantity: selectedOrderDetail.quantity || 1 }])
-                          : [];
-
-                        orderSKUsToCalc.forEach(item => {
-                          let alreadyPacked = 0;
-                          for (let i = 0; i < nextTabIdx; i++) {
-                            const tabQtys = shipmentItemQuantitiesByTab[i] || {};
-                            alreadyPacked += tabQtys[item.sku] !== undefined ? tabQtys[item.sku] : 0;
-                          }
-                          newTabQtys[item.sku] = Math.max(0, item.quantity - alreadyPacked);
-                        });
-
-                        setShipmentItemQuantitiesByTab(prev => ({
-                          ...prev,
-                          [nextTabIdx]: newTabQtys
-                        }));
-
-                        setShipmentTabs(prev => [...prev, newTab]);
-                        setActiveShipmentTabIdx(nextTabIdx);
-                        triggerToast(`Created new workspace draft: ${newTab} with remaining items allocated`, 'success');
-                      }}
-                      className="p-1 hover:bg-slate-200 text-brand-600 hover:text-brand-700 rounded-full cursor-pointer transition-all"
-                      title="Add Shipment"
+              <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col w-full">
+                <AnimatePresence mode="wait" initial={false} custom={slideDirection}>
+                  {labelStep === 2 ? (
+                    <motion.div
+                      key="step2"
+                      custom={slideDirection}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                      className="flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-900 absolute inset-0"
                     >
-                      <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-2.5 space-y-1">
-                    {shipmentTabs.map((tab, idx) => (
-                      <div
-                        key={tab}
-                        onClick={() => {
-                          setActiveShipmentTabIdx(idx);
-                          triggerToast(`Switched fields to ${tab}`, 'info');
-                        }}
-                        className={`group px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer flex items-center justify-between ${
-                          idx === activeShipmentTabIdx
-                            ? 'bg-brand-50 text-brand-700 font-bold shadow-3xs'
-                            : 'text-slate-650 hover:bg-slate-100/80 hover:text-slate-900'
-                        }`}
+                  {/* Step 2 Toolbar inside bottom-sheet (resembles print modal in OrderDetailView) */}
+                  <div className="bg-[#2f3542] text-[#f1f1f1] h-12 border-b border-[#1c1e22] flex items-center justify-between px-6 font-sans select-none text-xs shrink-0">
+                    {/* Left Items: Document Name with Ellipsis Truncation */}
+                    <div className="flex items-center gap-2 truncate max-w-[160px] sm:max-w-[240px]">
+                      <span 
+                        className="font-semibold text-white/95 tracking-wide truncate text-xs font-sans"
+                        title={generatedShipment ? `shipping-label-${generatedShipment.trackingNumber}.pdf` : 'shipping-label.pdf'}
                       >
-                        <span className="truncate">{tab}</span>
-                        {shipmentTabs.length > 1 && idx >= modalExistingShipments.length && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const updated = shipmentTabs.filter((_, i) => i !== idx);
-                              setShipmentTabs(updated);
-                              if (activeShipmentTabIdx >= updated.length) {
-                                setActiveShipmentTabIdx(Math.max(0, updated.length - 1));
-                              }
-                              triggerToast(`Discarded ${tab} parameters`, 'info');
-                            }}
-                            className="hidden group-hover:flex p-0.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded transition"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                        {generatedShipment ? `shipping-label-${generatedShipment.trackingNumber}.pdf` : 'shipping-label.pdf'}
+                      </span>
+                    </div>
 
-                {/* SCROLLABLE INNER SECTION: Form grids */}
-                <div className="flex-1 bg-slate-50/50 p-6 overflow-y-auto h-full text-slate-700 text-xs">
+                    {/* Center Items: Zoom & Rotate (exactly matching the Outer print popup) */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 bg-[#1a1c1e] px-1 py-0.5 rounded-lg border border-slate-700/40">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewZoomForLabel(z => Math.max(50, z - 10))}
+                          className="h-6 w-6 flex items-center justify-center hover:bg-white/10 rounded transition text-white/80 hover:text-white cursor-pointer font-bold text-xs select-none focus:outline-none"
+                        >
+                          -
+                        </button>
+                        <span className="font-bold text-[10px] font-sans text-white/90 w-10 text-center select-none">{previewZoomForLabel}%</span>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewZoomForLabel(z => Math.min(200, z + 10))}
+                          className="h-6 w-6 flex items-center justify-center hover:bg-white/10 rounded transition text-white/80 hover:text-white cursor-pointer font-bold text-xs select-none focus:outline-none"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <button 
+                        type="button" 
+                        onClick={() => setPreviewRotationForLabel(r => (r + 90) % 360)}
+                        className="h-8 w-8 flex items-center justify-center hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition cursor-pointer focus:outline-none" 
+                        title="Rotate Clockwise"
+                      >
+                        <RotateCw className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Right Items: Download, Print label (exactly matching outer print popup style/buttons) */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (generatedShipment) {
+                            const html = getLabelPreviewHtml(generatedShipment);
+                            const blob = new Blob([html], { type: 'text/html' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `shipping-label-${generatedShipment.trackingNumber}.html`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            triggerToast('Shipping Label downloaded successfully!', 'success');
+                          }
+                        }}
+                        className="h-8 px-2.5 flex items-center justify-center hover:bg-white/10 rounded-lg text-slate-200 hover:text-white transition cursor-pointer gap-1.5 text-xs font-bold font-sans focus:outline-none"
+                        title="Download Label"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Download</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (printIframeRefForLabel.current && printIframeRefForLabel.current.contentWindow) {
+                            printIframeRefForLabel.current.contentWindow.focus();
+                            printIframeRefForLabel.current.contentWindow.print();
+                          }
+                        }}
+                        className="h-8 px-4 bg-[#3b82f6] hover:bg-[#2563eb] rounded-lg text-white font-bold transition cursor-pointer flex items-center gap-1.5 text-xs font-sans shadow-sm focus:outline-none"
+                        title="Print Label"
+                      >
+                        <Printer className="h-4 w-4" />
+                        <span>Print label</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Step 2 Label Preview Canvas */}
+                  <div className="bg-[#525659] flex-1 overflow-y-auto p-6 md:p-8 flex justify-center items-start relative select-none">
+                    <div
+                      style={{ transform: `scale(${previewZoomForLabel / 100}) rotate(${previewRotationForLabel}deg)`, transformOrigin: 'top center' }}
+                      className="bg-white shadow-2xl transition-transform duration-150 relative border border-slate-700/30 overflow-hidden"
+                    >
+                      <iframe
+                        ref={printIframeRefForLabel}
+                        srcDoc={getLabelPreviewHtml(generatedShipment)}
+                        className="w-[384px] h-[576px] bg-white border-0 select-text"
+                        title="Shipping Label Print Canvas"
+                        onLoad={() => {
+                          if (labelStep === 2 && printIframeRefForLabel.current && printIframeRefForLabel.current.contentWindow) {
+                            setTimeout(() => {
+                              if (printIframeRefForLabel.current && printIframeRefForLabel.current.contentWindow) {
+                                printIframeRefForLabel.current.contentWindow.focus();
+                                printIframeRefForLabel.current.contentWindow.print();
+                              }
+                            }, 400);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="step1"
+                  custom={slideDirection}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={slideTransition}
+                  className="flex-1 min-h-0 flex flex-row overflow-hidden absolute inset-0"
+                >
+                  {/* SCROLLABLE INNER SECTION: Form grids */}
+                  <div className="flex-1 bg-slate-50/50 p-6 overflow-y-auto h-full text-slate-700 text-xs">
                 {/* Main 2-Column Split with adjusted width: 5/12 left, 7/12 right */}
                 <div className={showAddressDetails ? "grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" : "max-w-2xl mx-auto space-y-6 w-full"}>
                   
@@ -6973,7 +7263,15 @@ export default function App() {
                             onChange={(e) => {
                               const val = e.target.value;
                               setLabelFormCountry(val);
-                              setLabelFormDestinationType(isInternationalCountry(val) ? 'International' : 'Domestic');
+                              const isIntl = isInternationalCountry(val);
+                              setLabelFormDestinationType(isIntl ? 'International' : 'Domestic');
+                              if (isIntl) {
+                                const prev = getPreviousHsCode();
+                                if (!labelFormHsCode) setLabelFormHsCode(prev);
+                                if (!labelFormCustomsHsCode || labelFormCustomsHsCode === '6109.10') {
+                                  setLabelFormCustomsHsCode(prev);
+                                }
+                              }
                             }}
                             className="w-full h-8 px-3 border border-slate-200 rounded-lg text-xs disabled:bg-slate-50/70 disabled:text-slate-500 disabled:border-slate-150 disabled:cursor-not-allowed"
                           />
@@ -7087,60 +7385,14 @@ export default function App() {
                           setLabelFormGetRateClicked(true);
                           setLabelFormSelectedRateIndex(0);
                           setLabelFormSelectedCarrier(firstService);
-                          triggerToast('Calculated live carrier rates successfully!', 'success');
+                          /* toast removed */
                         }, 500);
                       };
 
                       return (
                         <div className="py-1 space-y-3 font-sans">
                           
-                          {/* Dedicated Print Shipping Label Button Displayed Above The Carrier */}
-                          <div className="flex justify-end select-none">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setHeaderPrintSelection('Shipping Label');
-                                triggerToast('Preparing Shipping Label for print...', 'info');
-                                setTimeout(() => {
-                                  window.print();
-                                }, 300);
-                              }}
-                              className="w-full h-10 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-brand-100 transition-all focus:outline-none"
-                            >
-                              <Printer className="h-4 w-4" />
-                              <span>Print Shipping Label</span>
-                            </button>
-                          </div>
-
                           {/* 1. CARRIER & PACKAGE SPECIFICATION MODULE */}
-                          <div className="border border-slate-200 bg-white rounded-xl p-3 space-y-2 shadow-2xs">
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block pb-1 border-b border-slate-50 font-sans">
-                              Carrier
-                            </span>
-                            <div className="text-xs font-sans">
-                              <div className="relative">
-                                <select
-                                  value={labelFormCarrierPackage}
-                                  disabled={isCurrentTabSaved}
-                                  onChange={(e) => {
-                                    setLabelFormCarrierPackage(e.target.value);
-                                    setLabelFormGetRateClicked(false);
-                                    setLabelFormSelectedRateIndex(-1);
-                                  }}
-                                  className="w-full h-9 pl-3 pr-10 border border-slate-205 hover:border-slate-350 focus:border-brand-500 rounded-lg text-xs font-semibold bg-white text-slate-800 outline-none cursor-pointer appearance-none transition disabled:bg-slate-50/70 disabled:text-slate-500 disabled:cursor-not-allowed"
-                                >
-                                  <option value="ALL">ALL</option>
-                                  <option value="USPS">USPS</option>
-                                  <option value="DHL">DHL</option>
-                                  <option value="UPS">UPS</option>
-                                  <option value="FedEx">FedEx</option>
-                                </select>
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                  <ChevronDown className="h-4 w-4" />
-                                </span>
-                              </div>
-                            </div>
-                          </div>
 
                           {/* 2. SHIPMENT ITEMS / SKUS SELECTION MODULE */}
                           <div className="border border-slate-200 bg-white rounded-xl p-3 space-y-2.5 shadow-2xs">
@@ -7627,7 +7879,7 @@ export default function App() {
                                     <button
                                       type="button"
                                       onClick={handleGetRate}
-                                      className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black rounded-lg text-xs transition cursor-pointer shadow-sm flex items-center justify-center select-none"
+                                      className="h-10 px-6 btn-primary-gradient text-white font-black rounded-lg text-xs transition cursor-pointer shadow-sm flex items-center justify-center select-none"
                                     >
                                       Get rates
                                     </button>
@@ -7644,47 +7896,96 @@ export default function App() {
 
                                 {/* 3. Rates options presentation (Get rates button is hidden) */}
                                 {!labelFormLoadingRates && labelFormGetRateClicked && (
-                                  <div className="space-y-1.5 font-sans animate-fade-in">
-                                    {getServicesList(
-                                      parseFloat(activePkg.weight || '47.72'),
-                                      parseFloat(activePkg.length || '7.00'),
-                                      parseFloat(activePkg.width || '5.00'),
-                                      parseFloat(activePkg.height || '14.00'),
-                                      labelFormCarrierPackage
-                                    ).map((srv, sIdx) => {
-                                      const isSelected = labelFormSelectedRateIndex === sIdx;
-                                      return (
-                                        <div
-                                          key={srv.name}
-                                          className={`p-2 px-3 rounded-lg border transition flex items-center justify-between select-none ${
-                                            isSelected
-                                              ? 'border-brand-500 bg-brand-50/10 shadow-3xs font-semibold'
-                                              : 'border-slate-100 bg-slate-50/40 opacity-70'
-                                          }`}
+                                  <div className="space-y-4 font-sans animate-fade-in">
+                                    {/* Carrier filtering dropdown */}
+                                    <div className="space-y-1 select-none">
+                                      <label className="text-[10.5px] uppercase font-bold text-slate-500 block font-sans">
+                                        Carrier Filter
+                                      </label>
+                                      <div className="relative font-sans">
+                                        <select
+                                          value={labelFormCarrierPackage}
+                                          onChange={(e) => {
+                                            const c = e.target.value;
+                                            setLabelFormCarrierPackage(c);
+                                            const servicesForC = getServicesList(
+                                              parseFloat(activePkg.weight || '47.72'),
+                                              parseFloat(activePkg.length || '7.00'),
+                                              parseFloat(activePkg.width || '5.00'),
+                                              parseFloat(activePkg.height || '14.00'),
+                                              c
+                                            );
+                                            if (servicesForC && servicesForC[0]) {
+                                              setLabelFormSelectedCarrier(servicesForC[0].name);
+                                              setLabelFormSelectedRateIndex(0);
+                                            } else {
+                                              setLabelFormSelectedRateIndex(-1);
+                                            }
+                                          }}
+                                          className="w-full h-10 pl-3.5 pr-10 border border-slate-200 hover:border-slate-300 focus:border-brand-500 rounded-lg text-xs font-bold bg-white text-slate-800 outline-none cursor-pointer appearance-none transition shadow-2xs"
                                         >
-                                          <div className="flex items-center gap-2.5">
-                                            {isSelected ? (
-                                              <div className="h-4 w-4 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
-                                                <Check className="h-2.5 w-2.5 text-white stroke-[3.5]" />
+                                          {['ALL', 'USPS', 'UPS', 'DHL', 'FedEx'].map((c) => (
+                                            <option key={c} value={c}>
+                                              {c === 'ALL' ? 'All Carriers (ALL)' : `${c} Carrier`}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                          <ChevronDown className="h-4 w-4" />
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Selectable service cards list */}
+                                    <div className="space-y-1.5">
+                                      <label className="text-[10.5px] uppercase font-bold text-slate-500 block font-sans">
+                                        Select Service Type
+                                      </label>
+                                      <div className="space-y-2 max-h-[220px] overflow-y-auto p-1.5 -m-1.5 pr-2">
+                                        {getServicesList(
+                                          parseFloat(activePkg.weight || '47.72'),
+                                          parseFloat(activePkg.length || '7.00'),
+                                          parseFloat(activePkg.width || '5.00'),
+                                          parseFloat(activePkg.height || '14.00'),
+                                          labelFormCarrierPackage
+                                        ).map((srv, idx) => {
+                                          const isSelected = labelFormSelectedCarrier === srv.name;
+                                          return (
+                                            <button
+                                              type="button"
+                                              key={srv.name}
+                                              onClick={() => {
+                                                setLabelFormSelectedCarrier(srv.name);
+                                                setLabelFormSelectedRateIndex(idx);
+                                              }}
+                                              className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition duration-150 cursor-pointer outline-none focus:outline-none ${
+                                                isSelected
+                                                  ? 'border-brand-600 bg-brand-50/30 ring-2 ring-brand-200/80 shadow-xs'
+                                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-3">
+                                                <CarrierLogo carrier={srv.carrier} />
+                                                <div className="flex flex-col text-left">
+                                                  <span className="text-xs font-extrabold text-slate-800 font-sans">{srv.name}</span>
+                                                  <span className="text-[10px] text-slate-500 font-medium mt-0.5 font-sans">{srv.est}</span>
+                                                </div>
                                               </div>
-                                            ) : (
-                                              <div className="h-4 w-4 rounded-full border border-slate-200 bg-slate-50 shrink-0" />
-                                            )}
-                                            <div className="leading-tight">
-                                              <div className={`text-xs ${isSelected ? 'text-brand-700 font-extrabold' : 'text-slate-500 font-semibold'}`}>
-                                                {srv.name}
+                                              <div className="flex items-center gap-2.5">
+                                                <span className="text-sm font-black text-brand-600 tracking-tight font-sans">{srv.price}</span>
+                                                {isSelected ? (
+                                                  <div className="h-4.5 w-4.5 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+                                                    <Check className="h-2.5 w-2.5 text-white stroke-[3.5]" strokeWidth={3.5} />
+                                                  </div>
+                                                ) : (
+                                                  <div className="h-4.5 w-4.5 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0" />
+                                                )}
                                               </div>
-                                              <div className="text-[10px] text-slate-400 mt-0.5 font-medium normal-case">
-                                                {srv.est}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          <div className={`text-xs font-black tracking-tight ${isSelected ? 'text-brand-600' : 'text-slate-550'}`}>
-                                            {srv.price}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </>
@@ -7698,119 +7999,183 @@ export default function App() {
 
                 </div>
               </div>
-
-              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
               {/* Persistent Footer */}
-              <div className="px-6 py-3.5 border-t border-slate-100 bg-white flex items-center justify-end gap-3 select-none shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsLabelPopupOpen(false)}
-                  className="h-9 px-4 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition cursor-pointer"
-                >
-                  {isCurrentTabSaved ? 'Close' : 'Cancel'}
-                </button>
-                {!isCurrentTabSaved && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedOrderDetail) {
-                        const compiledAddress = `${labelFormAddress1}${labelFormAddress2 ? ', ' + labelFormAddress2 : ''}, ${labelFormCity}, ${labelFormZip}, ${labelFormCountry}`;
-                        const nameStr = `${labelFormFirstName} ${labelFormLastName}`;
-
-                        // Extract package info
-                        const activePkg = labelFormPackages && labelFormPackages[0] ? labelFormPackages[0] : { weight: '47.92', length: '7.00', width: '5.00', height: '14.00' };
-                        const sizeStr = `${activePkg.length || '7.00'} × ${activePkg.width || '5.00'} × ${activePkg.height || '14.00'}`;
-                        const weightStr = `${activePkg.weight || '47.92'} lbs`;
-
-                        const services = getServicesList(
-                          parseFloat(activePkg.weight || '47.92'),
-                          parseFloat(activePkg.length || '7.00'),
-                          parseFloat(activePkg.width || '5.00'),
-                          parseFloat(activePkg.height || '14.00'),
-                          labelFormCarrierPackage
-                        );
-                        const matchedService: any = services.find(s => s.name === labelFormSelectedCarrier) || services[0] || { name: 'UPS Ground - NSA Account', price: '$8.61' };
-                        const carrierName = matchedService.carrier || (labelFormSelectedCarrier.includes('USPS') ? 'USPS' : labelFormSelectedCarrier.includes('UPS') ? 'UPS' : labelFormSelectedCarrier.includes('DHL') ? 'DHL' : 'FedEx');
-                        const ratePrice = matchedService.price || '$8.61';
-
-                        const randTracking = '1LSDBVU' + Math.floor(100000 + Math.random() * 900000) + 'NI';
-
-                        // Calculate current packed items for the shipment
-                        const orderSKUs = selectedOrderDetail.orderItems && selectedOrderDetail.orderItems.length > 0 
-                          ? selectedOrderDetail.orderItems 
-                          : [{ productName: 'Classic Crewneck Hoodie', styleColor: 'Black / S', sku: 'SKU-G640-BLK-S-01', quantity: selectedOrderDetail.quantity || 1 }];
-
-                        const currentTabQtys = shipmentItemQuantitiesByTab[activeShipmentTabIdx] || {};
-                        const packedItems = orderSKUs.map(item => {
-                          let packedInOtherTabs = 0;
-                          for (let i = 0; i < shipmentTabs.length; i++) {
-                            if (i === activeShipmentTabIdx) continue;
-                            const tabQtys = shipmentItemQuantitiesByTab[i] || {};
-                            packedInOtherTabs += tabQtys[item.sku] !== undefined ? tabQtys[item.sku] : 0;
+              <div className={`px-6 py-3.5 border-t border-slate-100 bg-white flex items-center select-none shrink-0 ${labelStep === 2 ? 'justify-between' : 'justify-end gap-3'}`}>
+                {labelStep === 2 ? (
+                  <>
+                    <div />
+                    <button
+                      type="button"
+                      onClick={() => setIsLabelPopupOpen(false)}
+                      className="h-9 px-5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs shadow-xs transition cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsLabelPopupOpen(false)}
+                      className="h-9 px-4 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!isCurrentTabSaved && (!labelFormSelectedCarrier || labelFormSelectedRateIndex === -1)}
+                      onClick={() => {
+                        if (isCurrentTabSaved) {
+                          if (selectedOrderDetail) {
+                            const existingShipment = modalExistingShipments[activeShipmentTabIdx];
+                            if (existingShipment) {
+                              setGeneratedShipment(existingShipment);
+                            }
+                            setSlideDirection(1);
+                            setLabelStep(2);
+                            triggerToast('Shipping label sent to printer successfully!', 'success');
                           }
-                          const maxAllowed = Math.max(0, item.quantity - packedInOtherTabs);
-                          const qty = currentTabQtys[item.sku] !== undefined ? currentTabQtys[item.sku] : maxAllowed;
-                          return { sku: item.sku, qty, productName: item.productName };
-                        });
+                          return;
+                        }
 
-                        const newShipment = {
-                          trackingNumber: randTracking,
-                          carrier: carrierName,
-                          service: matchedService.name,
-                          shipDate: new Date().toLocaleDateString('en-US'),
-                          shippingMethod: 'FLAT',
-                          size: sizeStr,
-                          weight: weightStr,
-                          price: ratePrice,
-                          packedItems: packedItems.map(p => ({ sku: p.sku, qty: p.qty })),
-                          senderDetails: {
-                            name: 'Hiep Admin',
-                            company: 'SwiftPOD LLC - Warehouse A',
-                            address: '2070 S 7th St. Ste E, San Jose, CA 95112'
-                          },
-                          recipientDetails: {
-                            firstName: labelFormFirstName,
-                            lastName: labelFormLastName,
-                            company: labelFormCompany,
-                            email: labelFormEmail,
-                            phone: labelFormPhone,
-                            country: labelFormCountry,
-                            address1: labelFormAddress1,
-                            address2: labelFormAddress2,
-                            city: labelFormCity,
-                            zip: labelFormZip
+                        if (selectedOrderDetail) {
+                          const compiledAddress = `${labelFormAddress1}${labelFormAddress2 ? ', ' + labelFormAddress2 : ''}, ${labelFormCity}, ${labelFormZip}, ${labelFormCountry}`;
+                          const nameStr = `${labelFormFirstName} ${labelFormLastName}`;
+
+                          // Extract package info
+                          const activePkg = labelFormPackages && labelFormPackages[0] ? labelFormPackages[0] : { weight: '47.92', length: '7.00', width: '5.00', height: '14.00' };
+                          const sizeStr = `${activePkg.length || '7.00'} × ${activePkg.width || '5.00'} × ${activePkg.height || '14.00'}`;
+                          const weightStr = `${activePkg.weight || '47.92'} lbs`;
+
+                          const services = getServicesList(
+                            parseFloat(activePkg.weight || '47.92'),
+                            parseFloat(activePkg.length || '7.00'),
+                            parseFloat(activePkg.width || '5.00'),
+                            parseFloat(activePkg.height || '14.00'),
+                            labelFormCarrierPackage
+                          );
+                          const matchedService: any = services.find(s => s.name === labelFormSelectedCarrier) || services[0] || { name: 'UPS Ground - NSA Account', price: '$8.61' };
+                          const carrierName = matchedService.carrier || (labelFormSelectedCarrier.includes('USPS') ? 'USPS' : labelFormSelectedCarrier.includes('UPS') ? 'UPS' : labelFormSelectedCarrier.includes('DHL') ? 'DHL' : 'FedEx');
+                          const ratePrice = matchedService.price || '$8.61';
+
+                          const randTracking = '1LSDBVU' + Math.floor(100000 + Math.random() * 900000) + 'NI';
+
+                          // Calculate current packed items for the shipment
+                          const orderSKUs = selectedOrderDetail.orderItems && selectedOrderDetail.orderItems.length > 0 
+                            ? selectedOrderDetail.orderItems 
+                            : [{ productName: 'Classic Crewneck Hoodie', styleColor: 'Black / S', sku: 'SKU-G640-BLK-S-01', quantity: selectedOrderDetail.quantity || 1 }];
+
+                          const currentTabQtys = shipmentItemQuantitiesByTab[activeShipmentTabIdx] || {};
+                          const packedItems = orderSKUs.map(item => {
+                            let packedInOtherTabs = 0;
+                            for (let i = 0; i < shipmentTabs.length; i++) {
+                              if (i === activeShipmentTabIdx) continue;
+                              const tabQtys = shipmentItemQuantitiesByTab[i] || {};
+                              packedInOtherTabs += tabQtys[item.sku] !== undefined ? tabQtys[item.sku] : 0;
+                            }
+                            const maxAllowed = Math.max(0, item.quantity - packedInOtherTabs);
+                            const qty = currentTabQtys[item.sku] !== undefined ? currentTabQtys[item.sku] : maxAllowed;
+                            return { sku: item.sku, qty, productName: item.productName };
+                          });
+
+                          // Save to localStorage if country is international and code is entered
+                          if (isInternationalCountry(labelFormCountry)) {
+                            if (labelFormHsCode) {
+                              localStorage.setItem('last_used_hs_code', labelFormHsCode);
+                            } else if (labelFormCustomsHsCode) {
+                              localStorage.setItem('last_used_hs_code', labelFormCustomsHsCode);
+                            }
                           }
-                        };
 
-                        // Decrement the physical product warehouse stock quantity in real-time
-                        packedItems.forEach(p => {
-                          if (p.qty <= 0) return;
-                          setProducts(prevProducts => prevProducts.map(prod => {
-                            // Compare SKU substring match or name match
-                            const isMatch = (prod.sku?.toLowerCase().includes(p.sku.toLowerCase())) ||
-                                            (prod.name?.toLowerCase() === p.productName.toLowerCase());
-                            if (isMatch) {
-                              const currentStockMatch = prod.stockQty.match(/\d+/);
-                              if (currentStockMatch) {
-                                const oldStock = parseInt(currentStockMatch[0]);
-                                const newStock = Math.max(0, oldStock - p.qty);
+                          const newShipment = {
+                            trackingNumber: randTracking,
+                            carrier: carrierName,
+                            service: matchedService.name,
+                            shipDate: new Date().toLocaleDateString('en-US'),
+                            shippingMethod: 'FLAT',
+                            size: sizeStr,
+                            weight: weightStr,
+                            price: ratePrice,
+                            hsCode: labelFormHsCode,
+                            customsHsCode: labelFormCustomsHsCode,
+                            packedItems: packedItems.map(p => ({ sku: p.sku, qty: p.qty })),
+                            senderDetails: {
+                              name: 'Hiep Admin',
+                              company: 'SwiftPOD LLC - Warehouse A',
+                              address: '2070 S 7th St. Ste E, San Jose, CA 95112'
+                            },
+                            recipientDetails: {
+                              firstName: labelFormFirstName,
+                              lastName: labelFormLastName,
+                              company: labelFormCompany,
+                              email: labelFormEmail,
+                              phone: labelFormPhone,
+                              country: labelFormCountry,
+                              address1: labelFormAddress1,
+                              address2: labelFormAddress2,
+                              city: labelFormCity,
+                              zip: labelFormZip
+                            }
+                          };
+
+                          // Decrement the physical product warehouse stock quantity in real-time
+                          packedItems.forEach(p => {
+                            if (p.qty <= 0) return;
+                            setProducts(prevProducts => prevProducts.map(prod => {
+                              // Compare SKU substring match or name match
+                              const isMatch = (prod.sku?.toLowerCase().includes(p.sku.toLowerCase())) ||
+                                              (prod.name?.toLowerCase() === p.productName.toLowerCase());
+                              if (isMatch) {
+                                const currentStockMatch = prod.stockQty.match(/\d+/);
+                                if (currentStockMatch) {
+                                  const oldStock = parseInt(currentStockMatch[0]);
+                                  const newStock = Math.max(0, oldStock - p.qty);
+                                  return {
+                                    ...prod,
+                                    stockQty: `In stock: ${newStock}`
+                                  };
+                                }
+                              }
+                              return prod;
+                            }));
+                          });
+
+                          setOrders(prev => prev.map(o => {
+                            if (o.id === selectedOrderDetail.id) {
+                              const hasExisting = !!o.shipmentInfo;
+                              if (!hasExisting) {
                                 return {
-                                  ...prod,
-                                  stockQty: `In stock: ${newStock}`
+                                  ...o,
+                                  customerStore: nameStr,
+                                  destination: compiledAddress,
+                                  destinationType: labelFormDestinationType,
+                                  shipmentInfo: newShipment,
+                                  shipments: [newShipment],
+                                  orderStatus: 'Shipped',
+                                  shippingStatus: 'In Transit'
+                                };
+                              } else {
+                                const updatedShipments = [...(o.shipments || [o.shipmentInfo]), newShipment];
+                                return {
+                                  ...o,
+                                  shipments: updatedShipments
                                 };
                               }
                             }
-                            return prod;
+                            return o;
                           }));
-                        });
 
-                        setOrders(prev => prev.map(o => {
-                          if (o.id === selectedOrderDetail.id) {
-                            const hasExisting = !!o.shipmentInfo;
+                          setSelectedOrderDetail(prev => {
+                            if (!prev) return null;
+                            const hasExisting = !!prev.shipmentInfo;
                             if (!hasExisting) {
                               return {
-                                ...o,
+                                ...prev,
                                 customerStore: nameStr,
                                 destination: compiledAddress,
                                 destinationType: labelFormDestinationType,
@@ -7820,46 +8185,25 @@ export default function App() {
                                 shippingStatus: 'In Transit'
                               };
                             } else {
-                              const updatedShipments = [...(o.shipments || [o.shipmentInfo]), newShipment];
+                              const updatedShipments = [...(prev.shipments || [prev.shipmentInfo]), newShipment];
                               return {
-                                ...o,
+                                ...prev,
                                 shipments: updatedShipments
                               };
                             }
-                          }
-                          return o;
-                        }));
+                          });
 
-                        setSelectedOrderDetail(prev => {
-                          if (!prev) return null;
-                          const hasExisting = !!prev.shipmentInfo;
-                          if (!hasExisting) {
-                            return {
-                              ...prev,
-                              customerStore: nameStr,
-                              destination: compiledAddress,
-                              destinationType: labelFormDestinationType,
-                              shipmentInfo: newShipment,
-                              shipments: [newShipment],
-                              orderStatus: 'Shipped',
-                              shippingStatus: 'In Transit'
-                            };
-                          } else {
-                            const updatedShipments = [...(prev.shipments || [prev.shipmentInfo]), newShipment];
-                            return {
-                              ...prev,
-                              shipments: updatedShipments
-                            };
-                          }
-                        });
-                      }
-                      setIsLabelPopupOpen(false);
-                      triggerToast('Shipping label generated, shipment registered, and inventory count decremented successfully!', 'success');
-                    }}
-                    className="h-9 px-5 bg-brand-600 hover:bg-brand-750 active:bg-brand-800 text-white font-semibold rounded-lg text-xs shadow-xs transition cursor-pointer"
-                  >
-                    Save Changes
-                  </button>
+                          setGeneratedShipment(newShipment);
+                          setSlideDirection(1);
+                          setLabelStep(2);
+                          triggerToast('Successfully created and printed shipping label!', 'success');
+                        }
+                      }}
+                      className="h-9 px-5 btn-primary-gradient text-white font-semibold rounded-lg text-xs shadow-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCurrentTabSaved ? 'Print Label' : 'Create & Print'}
+                    </button>
+                  </>
                 )}
               </div>
 

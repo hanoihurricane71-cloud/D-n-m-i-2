@@ -1021,7 +1021,6 @@ export function LabelTab({ products = [] }: { products?: any[] } = {}) {
                   <div key={side}>
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-bold text-slate-900 text-sm">{title}</h4>
-                      <button type="button" className="text-xs text-brand-600 hover:text-brand-800 font-semibold cursor-pointer">Paste US Address</button>
                     </div>
                     <div className="space-y-3">
                       {[
